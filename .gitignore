@@ -1,0 +1,30 @@
+# Node
+node_modules/
+dist/
+
+# Python
+ai-service/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Java / Maven
+backend/target/
+*.class
+*.jar
+*.war
+.mvn/wrapper/maven-wrapper.jar
+
+# Hardhat
+blockchain/cache/
+blockchain/artifacts/
+blockchain/typechain-types/
+blockchain/coverage/
+
+# Env / OS
+.env
+.env.local
+.DS_Store
+Thumbs.db
+*.log

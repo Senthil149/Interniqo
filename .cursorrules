@@ -1,0 +1,59 @@
+# AI-Powered Internship Recommendation and Verification System
+
+College major project. Follow this spec exactly; do not invent features or change architecture without explaining why first.
+
+## Flow
+
+Resume upload → SBERT semantic matching → cross-border filtering → ranked recommendations → suspicious-posting risk assessment → official company email verification → application → internship completion → blockchain-backed credential verification.
+
+## Stack
+
+- Frontend: React.js + Tailwind CSS + React Router + Axios
+- Backend: Spring Boot REST API (Java), layered as controller / service / repository / entity / dto / security / config / exception / util
+- Database: MySQL
+- AI/NLP: separate Python microservice, Sentence-BERT (SBERT) + cosine similarity, exposing `/extract-resume`, `/embed`, `/match`
+- Email: token/link-based verification via SMTP
+- Blockchain: Ethereum-compatible network + Solidity smart contract (`issueCredential`, `verifyCredential`)
+- Auth: JWT + role-based authorization (`STUDENT`, `COMPANY`, `ADMIN`)
+
+## Architecture
+
+Monorepo with four services. Keep AI and blockchain as separate services callable over HTTP/RPC — never inline SBERT or web3 calls into Spring Boot controllers.
+
+```
+internship-platform/
+  frontend/
+  backend/          # com.internship.platform
+  ai-service/
+  blockchain/
+  docs/
+```
+
+## Database entities (core fields)
+
+- users(id, name, email, password_hash, role, created_at)
+- students(id, user_id, education, skills, projects, experience, certifications, interests, resume_path)
+- companies(id, user_id, company_name, description, website, country, email, email_verified)
+- student_preferences(id, student_id, country, location, work_mode, duration, minimum_stipend, currency, visa_required)
+- internships(id, company_id, title, description, required_skills, country, city, work_mode, duration, stipend, currency, eligibility, visa_information, deadline, status)
+- applications(id, student_id, internship_id, status[APPLIED/SHORTLISTED/ACCEPTED/REJECTED/COMPLETED], applied_at, updated_at)
+- risk_assessments(id, internship_id, score, level, reasons, created_at)
+- email_verifications(id, user_id NULLABLE, company_id NULLABLE, token, expiry, verified_at) — exactly one of user_id/company_id is set; enforce in the service layer
+- credentials(id, credential_id, student_id, company_id, internship_id, completion_date, hash, blockchain_tx)
+- blockchain_records(id, credential_id, transaction_hash, contract_address, network, timestamp)
+
+Expand fields sensibly when implementing, but keep these cores.
+
+## Key design rules (do not violate)
+
+1. Recommendation order is always: mandatory structured filters (country / work-mode / duration / stipend / eligibility / visa) → SBERT semantic matching → cosine similarity → ranking. Never rank semantically before applying hard filters.
+
+2. Cosine similarity is a ranking signal, not a probability. Never label it "% match to job success" or similar.
+
+3. Risk assessment: weighted indicators (fee request=25, training/payment request=20, unrealistic stipend=15, guaranteed job promise=20, incomplete company info=10, suspicious payment instructions=20, duplicate posting=15). These sum to 125 — cap the total score at 100 before assigning Low(<40) / Medium(40-70) / High(>70) labels; state this cap explicitly in code comments. Never claim the score proves fraud — it is a warning signal only.
+
+4. Email verification proves control of an inbox, not legal company identity. Do not imply otherwise in UI copy.
+
+5. Keep the AI service and blockchain integration as separate services callable over HTTP/RPC. Never inline SBERT or web3 calls directly into Spring Boot controllers.
+
+6. Never fabricate evaluation metrics anywhere (code comments, seed data, docs). Leave placeholders explicitly marked `TODO(measure after real evaluation)` rather than plausible-looking fake numbers.
