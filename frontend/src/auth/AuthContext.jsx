@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import api from '../api/http.js'
-import { clearAuth, getStoredUser, persistAuth } from './tokenStorage.js'
+import { clearAuth, getStoredUser, persistAuth, persistUser } from './tokenStorage.js'
 
 const AuthContext = createContext(null)
 
@@ -22,6 +22,18 @@ export function AuthProvider({ children }) {
       return data
     }
 
+    async function refreshUser() {
+      try {
+        const { data } = await api.get('/api/auth/me')
+        persistUser(data)
+        setUser(data)
+        return data
+      } catch (err) {
+        console.error('Failed to refresh user profile:', err)
+        return null
+      }
+    }
+
     function logout() {
       clearAuth()
       setUser(null)
@@ -32,6 +44,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       register,
       login,
+      refreshUser,
       logout,
     }
   }, [user])

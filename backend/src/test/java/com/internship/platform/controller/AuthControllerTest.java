@@ -35,6 +35,9 @@ class AuthControllerTest {
     @MockBean
     private AuthService authService;
 
+    @MockBean
+    private com.internship.platform.service.EmailVerificationService emailVerificationService;
+
     @Test
     void registerReturnsCreatedTokens() throws Exception {
         UserSummary summary = new UserSummary();

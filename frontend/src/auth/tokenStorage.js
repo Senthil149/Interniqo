@@ -34,6 +34,12 @@ export function persistAuth(payload) {
   }
 }
 
+export function persistUser(user) {
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
+  }
+}
+
 export function clearAuth() {
   localStorage.removeItem(ACCESS_KEY)
   localStorage.removeItem(REFRESH_KEY)

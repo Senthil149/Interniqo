@@ -28,6 +28,12 @@ class RoleAuthorizationTest {
     @MockBean
     private UserDetailsService userDetailsService;
 
+    @MockBean
+    private com.internship.platform.service.InternshipService internshipService;
+
+    @MockBean
+    private com.internship.platform.service.StudentService studentService;
+
     @Test
     void studentEndpointRejectsAnonymous() throws Exception {
         mockMvc.perform(get("/api/student/me")).andExpect(status().isUnauthorized());

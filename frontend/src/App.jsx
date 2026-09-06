@@ -13,6 +13,8 @@ import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
 import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
 import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
 import RecommendationsPage from './pages/student/RecommendationsPage.jsx'
+import VerifyEmailPage from './pages/VerifyEmailPage.jsx'
+import CompanyVerificationBanner from './components/CompanyVerificationBanner.jsx'
 
 const NAV_LINK =
   'font-medium text-slate-600 hover:text-slate-900 transition-colors'
@@ -128,6 +130,7 @@ function AppRoutes() {
   return (
     <>
       <NavBar />
+      <CompanyVerificationBanner />
       <main className="mx-auto max-w-7xl px-6 py-10">
         <Routes>
           {/* Public */}
@@ -135,6 +138,7 @@ function AppRoutes() {
           <Route path="/health" element={<HealthPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
 
           {/* Generic authenticated */}
           <Route

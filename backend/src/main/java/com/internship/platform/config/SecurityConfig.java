@@ -59,7 +59,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/health").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
+                                "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
                         // Public read-only internship detail — no auth required
                         .requestMatchers(HttpMethod.GET, "/api/internships/**").permitAll()
                         .requestMatchers("/api/student/**").hasRole("STUDENT")

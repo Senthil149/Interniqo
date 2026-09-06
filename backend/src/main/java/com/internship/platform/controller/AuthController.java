@@ -13,8 +13,13 @@ import com.internship.platform.dto.AuthResponse;
 import com.internship.platform.dto.LoginRequest;
 import com.internship.platform.dto.RefreshRequest;
 import com.internship.platform.dto.RegisterRequest;
+import com.internship.platform.dto.ResendVerificationRequest;
+import com.internship.platform.dto.ResendVerificationResponse;
 import com.internship.platform.dto.UserSummary;
+import com.internship.platform.dto.VerifyEmailResponse;
 import com.internship.platform.service.AuthService;
+import com.internship.platform.service.EmailVerificationService;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.validation.Valid;
 
@@ -23,9 +28,11 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, EmailVerificationService emailVerificationService) {
         this.authService = authService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register")
@@ -47,5 +54,33 @@ public class AuthController {
     @GetMapping("/me")
     public UserSummary me(Authentication authentication) {
         return authService.me(authentication.getName());
+    }
+
+    /**
+     * Validate verification token from email link click.
+     * Publicly accessible per API plan.
+     *
+     * Design Rule #4: Confirms inbox control only, not legal company identity.
+     */
+    @GetMapping("/verify-email")
+    public VerifyEmailResponse verifyEmail(@RequestParam("token") String token) {
+        return emailVerificationService.verifyEmail(token);
+    }
+
+    /**
+     * Re-send a verification email to a company inbox.
+     * If user is authenticated as company, defaults to current company email.
+     */
+    @PostMapping("/resend-verification")
+    public ResendVerificationResponse resendVerification(
+            @RequestBody(required = false) ResendVerificationRequest request,
+            Authentication authentication) {
+        String email = null;
+        if (request != null && request.getEmail() != null && !request.getEmail().isBlank()) {
+            email = request.getEmail().trim();
+        } else if (authentication != null && authentication.getName() != null) {
+            email = authentication.getName();
+        }
+        return emailVerificationService.resendVerification(email);
     }
 }

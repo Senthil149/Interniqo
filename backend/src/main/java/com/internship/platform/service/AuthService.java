@@ -21,6 +21,8 @@ import com.internship.platform.repository.StudentRepository;
 import com.internship.platform.repository.UserRepository;
 import com.internship.platform.security.JwtService;
 
+import java.util.Optional;
+
 @Service
 public class AuthService {
 
@@ -30,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final EmailVerificationService emailVerificationService;
 
     public AuthService(
             UserRepository userRepository,
@@ -37,13 +40,15 @@ public class AuthService {
             CompanyRepository companyRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            JwtService jwtService) {
+            JwtService jwtService,
+            EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.companyRepository = companyRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
@@ -77,7 +82,10 @@ public class AuthService {
             company.setCompanyName(companyName);
             company.setEmail(email);
             company.setEmailVerified(false);
-            companyRepository.save(company);
+            company = companyRepository.save(company);
+
+            // Generate secure token, 24h expiry, and send verification email (or log to console)
+            emailVerificationService.createAndSendVerification(company);
         }
 
         return tokensFor(user);
@@ -104,13 +112,26 @@ public class AuthService {
     public UserSummary me(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
-        return UserSummary.from(user);
+        return buildUserSummary(user);
     }
 
     private AuthResponse tokensFor(User user) {
         return new AuthResponse(
                 jwtService.createAccessToken(user),
                 jwtService.createRefreshToken(user),
-                UserSummary.from(user));
+                buildUserSummary(user));
+    }
+
+    private UserSummary buildUserSummary(User user) {
+        Boolean emailVerified = null;
+        Long companyId = null;
+        if (user.getRole() == UserRole.COMPANY) {
+            Optional<Company> companyOpt = companyRepository.findByUser(user);
+            if (companyOpt.isPresent()) {
+                emailVerified = companyOpt.get().isEmailVerified();
+                companyId = companyOpt.get().getId();
+            }
+        }
+        return UserSummary.from(user, emailVerified, companyId);
     }
 }
