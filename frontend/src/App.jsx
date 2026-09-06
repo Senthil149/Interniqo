@@ -9,10 +9,12 @@ import RegisterPage from './pages/RegisterPage.jsx'
 import MyInternshipsPage from './pages/company/MyInternshipsPage.jsx'
 import CreateInternshipPage from './pages/company/CreateInternshipPage.jsx'
 import EditInternshipPage from './pages/company/EditInternshipPage.jsx'
+import CompanyApplicationsPage from './pages/company/CompanyApplicationsPage.jsx'
 import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
 import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
 import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
 import RecommendationsPage from './pages/student/RecommendationsPage.jsx'
+import MyApplicationsPage from './pages/student/MyApplicationsPage.jsx'
 import VerifyEmailPage from './pages/VerifyEmailPage.jsx'
 import CompanyVerificationBanner from './components/CompanyVerificationBanner.jsx'
 
@@ -45,6 +47,12 @@ function NavBar() {
               My Listings
             </NavLink>
             <NavLink
+              to="/company/applications"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              Applications
+            </NavLink>
+            <NavLink
               to="/company/internships/new"
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
@@ -67,6 +75,12 @@ function NavBar() {
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
               AI Recommendations
+            </NavLink>
+            <NavLink
+              to="/student/applications"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              My Applications
             </NavLink>
             <NavLink
               to="/student/resume"
@@ -170,6 +184,14 @@ function AppRoutes() {
             }
           />
           <Route
+            path="/company/applications"
+            element={
+              <ProtectedRoute requiredRole="COMPANY">
+                <CompanyApplicationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/company/internships/new"
             element={
               <ProtectedRoute requiredRole="COMPANY">
@@ -200,6 +222,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute requiredRole="STUDENT">
                 <RecommendationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/applications"
+            element={
+              <ProtectedRoute requiredRole="STUDENT">
+                <MyApplicationsPage />
               </ProtectedRoute>
             }
           />
