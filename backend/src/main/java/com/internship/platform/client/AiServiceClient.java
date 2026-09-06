@@ -94,4 +94,36 @@ public class AiServiceClient {
             return Optional.empty();
         }
     }
+
+    /**
+     * POST resume representation and eligible internships to the AI service's {@code /match} endpoint.
+     *
+     * Design rule #5: semantic matching with Sentence-BERT is executed inside the Python microservice.
+     * Design rule #1: hard filters must already be applied prior to calling this method.
+     * Design rule #2: returns raw cosine similarity scores as ranking signals.
+     *
+     * @param resumeRepresentation  either a String or a Map representing extracted profile sections
+     * @param internships           list of eligible internships
+     * @return                      match results wrapped in {@link Optional}, or empty on failure
+     */
+    public Optional<com.internship.platform.dto.MatchResponse> match(
+            Object resumeRepresentation,
+            java.util.List<com.internship.platform.dto.MatchInternshipItem> internships) {
+        try {
+            com.internship.platform.dto.MatchRequest request =
+                    new com.internship.platform.dto.MatchRequest(resumeRepresentation, internships);
+
+            com.internship.platform.dto.MatchResponse response = restClient.post()
+                    .uri("/match")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(com.internship.platform.dto.MatchResponse.class);
+
+            return Optional.ofNullable(response);
+        } catch (Exception ex) {
+            log.warn("AI service /match unavailable — semantic matching failed: {}", ex.getMessage());
+            return Optional.empty();
+        }
+    }
 }

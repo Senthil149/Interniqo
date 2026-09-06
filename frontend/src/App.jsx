@@ -12,6 +12,7 @@ import EditInternshipPage from './pages/company/EditInternshipPage.jsx'
 import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
 import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
 import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
+import RecommendationsPage from './pages/student/RecommendationsPage.jsx'
 
 const NAV_LINK =
   'font-medium text-slate-600 hover:text-slate-900 transition-colors'
@@ -58,6 +59,12 @@ function NavBar() {
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
               Browse Internships
+            </NavLink>
+            <NavLink
+              to="/student/recommendations"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              AI Recommendations
             </NavLink>
             <NavLink
               to="/student/resume"
@@ -184,12 +191,11 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          {/* Student-only */}
           <Route
-            path="/student/internships"
+            path="/student/recommendations"
             element={
               <ProtectedRoute requiredRole="STUDENT">
-                <InternshipSearchPage />
+                <RecommendationsPage />
               </ProtectedRoute>
             }
           />

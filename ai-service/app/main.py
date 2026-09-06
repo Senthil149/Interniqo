@@ -84,8 +84,7 @@ class InternshipItem(BaseModel):
         description="Unique identifier for the internship (from database or external source)",
     )
     description: str = Field(
-        ...,
-        min_length=1,
+        default="",
         description="Internship job description or requirement text to match against",
     )
     title: Optional[str] = Field(

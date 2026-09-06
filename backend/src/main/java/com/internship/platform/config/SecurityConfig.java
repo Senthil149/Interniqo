@@ -63,6 +63,7 @@ public class SecurityConfig {
                         // Public read-only internship detail — no auth required
                         .requestMatchers(HttpMethod.GET, "/api/internships/**").permitAll()
                         .requestMatchers("/api/student/**").hasRole("STUDENT")
+                        .requestMatchers("/api/recommendations/**").hasRole("STUDENT")
                         .requestMatchers("/api/company/**").hasRole("COMPANY")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
