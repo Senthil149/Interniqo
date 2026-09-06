@@ -11,6 +11,7 @@ import CreateInternshipPage from './pages/company/CreateInternshipPage.jsx'
 import EditInternshipPage from './pages/company/EditInternshipPage.jsx'
 import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
 import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
+import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
 
 const NAV_LINK =
   'font-medium text-slate-600 hover:text-slate-900 transition-colors'
@@ -51,12 +52,20 @@ function NavBar() {
 
         {/* Student nav links */}
         {isAuthenticated && user?.role === 'STUDENT' && (
-          <NavLink
-            to="/student/internships"
-            className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
-          >
-            Browse Internships
-          </NavLink>
+          <>
+            <NavLink
+              to="/student/internships"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              Browse Internships
+            </NavLink>
+            <NavLink
+              to="/student/resume"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              My Resume
+            </NavLink>
+          </>
         )}
 
         {/* Health — always visible */}
@@ -172,6 +181,23 @@ function AppRoutes() {
             element={
               <ProtectedRoute requiredRole="STUDENT">
                 <InternshipSearchPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Student-only */}
+          <Route
+            path="/student/internships"
+            element={
+              <ProtectedRoute requiredRole="STUDENT">
+                <InternshipSearchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/resume"
+            element={
+              <ProtectedRoute requiredRole="STUDENT">
+                <ResumeUploadPage />
               </ProtectedRoute>
             }
           />
