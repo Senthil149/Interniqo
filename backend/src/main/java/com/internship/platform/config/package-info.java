@@ -1,4 +1,4 @@
 /**
- * Spring configuration beans. Config will be added in later phases.
+ * Spring configuration, including JWT security and CORS.
  */
 package com.internship.platform.config;

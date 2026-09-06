@@ -1,4 +1,4 @@
 /**
- * Request/response DTOs. Business types will be added in later phases.
+ * Request/response DTOs for auth and later domain APIs.
  */
 package com.internship.platform.dto;

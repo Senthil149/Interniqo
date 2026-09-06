@@ -1,4 +1,4 @@
 /**
- * Spring Data repositories. Persistence will be added in later phases.
+ * Spring Data repositories for core entities.
  */
 package com.internship.platform.repository;

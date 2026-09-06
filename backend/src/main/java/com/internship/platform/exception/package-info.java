@@ -1,4 +1,4 @@
 /**
- * API exception types and handlers. Will be added in later phases.
+ * API exception types and REST handlers.
  */
 package com.internship.platform.exception;

@@ -5,7 +5,8 @@ function HomePage() {
         Internship Recommendation and Verification System
       </h1>
       <p className="text-slate-600">
-        Frontend skeleton is running. Open the health route to confirm this service started.
+        Register or sign in to reach the protected dashboard. JWT access tokens are stored in the browser
+        and sent on API calls.
       </p>
     </section>
   )

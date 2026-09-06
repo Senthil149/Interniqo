@@ -1,4 +1,4 @@
 /**
- * JWT and role-based security. Auth wiring will be added in later phases.
+ * JWT filter, token service, and UserDetails loading.
  */
 package com.internship.platform.security;
