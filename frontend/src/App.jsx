@@ -16,6 +16,7 @@ import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
 import RecommendationsPage from './pages/student/RecommendationsPage.jsx'
 import MyApplicationsPage from './pages/student/MyApplicationsPage.jsx'
 import VerifyEmailPage from './pages/VerifyEmailPage.jsx'
+import VerifyCredentialPage from './pages/VerifyCredentialPage.jsx'
 import CompanyVerificationBanner from './components/CompanyVerificationBanner.jsx'
 
 const NAV_LINK =
@@ -91,7 +92,13 @@ function NavBar() {
           </>
         )}
 
-        {/* Health — always visible */}
+        {/* Public Verify Credential & Health */}
+        <NavLink
+          to="/verify-credential"
+          className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+        >
+          Verify Credential
+        </NavLink>
         <NavLink
           to="/health"
           className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
@@ -153,6 +160,8 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/verify-credential" element={<VerifyCredentialPage />} />
+          <Route path="/verify-credential/:credentialId" element={<VerifyCredentialPage />} />
 
           {/* Generic authenticated */}
           <Route

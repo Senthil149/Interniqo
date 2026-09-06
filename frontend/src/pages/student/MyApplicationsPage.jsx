@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getApplications } from '../../api/applications.js'
+import { getMyCredentials } from '../../api/credentials.js'
 
 const STATUS_CONFIG = {
   APPLIED: {
@@ -98,6 +99,7 @@ function StatusStepper({ status }) {
 
 export default function MyApplicationsPage() {
   const [applications, setApplications] = useState([])
+  const [credentialsMap, setCredentialsMap] = useState({}) // { [internshipId]: credentialObj }
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
@@ -106,13 +108,26 @@ export default function MyApplicationsPage() {
     loadApplications()
   }, [])
 
-  function loadApplications() {
+  async function loadApplications() {
     setLoading(true)
     setError('')
-    getApplications()
-      .then(({ data }) => setApplications(data || []))
-      .catch(() => setError('Failed to load applications. Please try refreshing.'))
-      .finally(() => setLoading(false))
+    try {
+      const [appsRes, credsRes] = await Promise.all([
+        getApplications(),
+        getMyCredentials().catch(() => ({ data: [] })),
+      ])
+      setApplications(appsRes.data || [])
+
+      const credMap = {}
+      ;(credsRes.data || []).forEach((c) => {
+        credMap[c.internshipId] = c
+      })
+      setCredentialsMap(credMap)
+    } catch {
+      setError('Unable to load your applications. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filtered = applications.filter((app) => {
@@ -269,6 +284,22 @@ export default function MyApplicationsPage() {
                   <p className="mt-2 text-center text-xs text-slate-500 italic">
                     {config.description}
                   </p>
+
+                  {/* Blockchain Credential Link if Issued */}
+                  {credentialsMap[app.internshipId] && (
+                    <div className="mt-4 flex items-center justify-center">
+                      <Link
+                        to={`/verify-credential/${encodeURIComponent(credentialsMap[app.internshipId].credentialId)}`}
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-300 px-4 py-2 text-xs font-bold text-emerald-800 shadow-xs hover:bg-emerald-100 transition"
+                      >
+                        <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        View Verified Blockchain Credential ({credentialsMap[app.internshipId].credentialId}) →
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer Metadata */}

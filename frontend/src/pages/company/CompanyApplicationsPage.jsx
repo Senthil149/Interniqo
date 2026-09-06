@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getApplications, updateApplicationStatus } from '../../api/applications.js'
 import { getMyInternships } from '../../api/internships.js'
+import { issueCredential, getMyCredentials } from '../../api/credentials.js'
 
 const STATUS_CONFIG = {
   APPLIED: {
@@ -40,6 +41,10 @@ export default function CompanyApplicationsPage() {
   const [updatingIds, setUpdatingIds] = useState({})
   const [actionError, setActionError] = useState(null) // { appId, message }
 
+  // Issued credentials: { [studentId_internshipId]: credentialObj }
+  const [credentialsMap, setCredentialsMap] = useState({})
+  const [issuingIds, setIssuingIds] = useState({})
+
   useEffect(() => {
     loadData()
   }, [])
@@ -48,16 +53,43 @@ export default function CompanyApplicationsPage() {
     setLoading(true)
     setError('')
     try {
-      const [appsRes, myInternshipsRes] = await Promise.all([
+      const [appsRes, myInternshipsRes, credsRes] = await Promise.all([
         getApplications(),
         getMyInternships(),
+        getMyCredentials().catch(() => ({ data: [] })),
       ])
       setApplications(appsRes.data || [])
       setInternships(myInternshipsRes.data || [])
+
+      // Map credentials by studentId_internshipId
+      const credMap = {}
+      ;(credsRes.data || []).forEach((c) => {
+        credMap[`${c.studentId}_${c.internshipId}`] = c
+      })
+      setCredentialsMap(credMap)
     } catch {
       setError('Unable to load candidate applications. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleIssueCredential(applicationId, studentId, internshipId) {
+    setIssuingIds((prev) => ({ ...prev, [applicationId]: true }))
+    setActionError(null)
+
+    try {
+      const { data } = await issueCredential(applicationId)
+      setCredentialsMap((prev) => ({
+        ...prev,
+        [`${studentId}_${internshipId}`]: data,
+      }))
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || 'Failed to issue blockchain credential. Please ensure the local Hardhat node is running.'
+      setActionError({ appId: applicationId, message: msg })
+    } finally {
+      setIssuingIds((prev) => ({ ...prev, [applicationId]: false }))
     }
   }
 
@@ -344,9 +376,49 @@ export default function CompanyApplicationsPage() {
                     )}
 
                     {app.status === 'COMPLETED' && (
-                      <span className="text-xs text-amber-700 font-medium">
-                        ✓ Completed • Ready for credential issuance
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {credentialsMap[`${app.studentId}_${app.internshipId}`] ? (
+                          <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-1.5">
+                            <span className="text-xs font-semibold text-emerald-800 flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                              Credential Issued
+                            </span>
+                            <Link
+                              to={`/verify-credential/${encodeURIComponent(credentialsMap[`${app.studentId}_${app.internshipId}`].credentialId)}`}
+                              target="_blank"
+                              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline"
+                            >
+                              Verify ({credentialsMap[`${app.studentId}_${app.internshipId}`].credentialId})
+                            </Link>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={issuingIds[app.id]}
+                            onClick={() => handleIssueCredential(app.id, app.studentId, app.internshipId)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50 transition"
+                          >
+                            {issuingIds[app.id] ? (
+                              <>
+                                <svg className="h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z" />
+                                </svg>
+                                Issuing on Ledger...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                Issue Blockchain Credential
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

@@ -71,6 +71,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/applications").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.PUT, "/api/applications/*/status").hasAnyRole("COMPANY", "ADMIN")
                         .requestMatchers("/api/applications/**").authenticated()
+                        // Public credential verification — no login required
+                        .requestMatchers(HttpMethod.GET, "/api/credentials/verify/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/credentials/issue").hasRole("COMPANY")
+                        .requestMatchers("/api/credentials/**").authenticated()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

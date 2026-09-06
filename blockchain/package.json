@@ -6,6 +6,8 @@
   "scripts": {
     "node": "hardhat node",
     "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "health": "node scripts/health-check.js"
   },
   "devDependencies": {
