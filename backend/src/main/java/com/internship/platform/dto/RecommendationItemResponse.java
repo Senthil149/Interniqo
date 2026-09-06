@@ -24,8 +24,15 @@ public class RecommendationItemResponse {
     private String visaInformation;
     private LocalDate deadline;
     private String status;
+    private Integer riskScore;
+    private String riskLevel;
+    private java.util.List<String> riskReasons;
 
     public static RecommendationItemResponse from(Recommendation rec) {
+        return from(rec, null);
+    }
+
+    public static RecommendationItemResponse from(Recommendation rec, com.internship.platform.entity.RiskAssessment risk) {
         RecommendationItemResponse resp = new RecommendationItemResponse();
         resp.setId(rec.getId());
         resp.setRanking(rec.getRanking());
@@ -48,6 +55,17 @@ public class RecommendationItemResponse {
             resp.setVisaInformation(in.getVisaInformation());
             resp.setDeadline(in.getDeadline());
             resp.setStatus(in.getStatus());
+        }
+
+        if (risk != null) {
+            resp.setRiskScore(risk.getScore());
+            resp.setRiskLevel(risk.getLevel().name());
+            if (risk.getReasons() != null && !risk.getReasons().isBlank()) {
+                resp.setRiskReasons(java.util.Arrays.stream(risk.getReasons().split("\n"))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList());
+            }
         }
         return resp;
     }
@@ -178,5 +196,29 @@ public class RecommendationItemResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Integer getRiskScore() {
+        return riskScore;
+    }
+
+    public void setRiskScore(Integer riskScore) {
+        this.riskScore = riskScore;
+    }
+
+    public String getRiskLevel() {
+        return riskLevel;
+    }
+
+    public void setRiskLevel(String riskLevel) {
+        this.riskLevel = riskLevel;
+    }
+
+    public java.util.List<String> getRiskReasons() {
+        return riskReasons;
+    }
+
+    public void setRiskReasons(java.util.List<String> riskReasons) {
+        this.riskReasons = riskReasons;
     }
 }

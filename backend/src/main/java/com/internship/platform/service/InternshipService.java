@@ -25,14 +25,17 @@ public class InternshipService {
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final InternshipRepository internshipRepository;
+    private final RiskAssessmentService riskAssessmentService;
 
     public InternshipService(
             UserRepository userRepository,
             CompanyRepository companyRepository,
-            InternshipRepository internshipRepository) {
+            InternshipRepository internshipRepository,
+            RiskAssessmentService riskAssessmentService) {
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
         this.internshipRepository = internshipRepository;
+        this.riskAssessmentService = riskAssessmentService;
     }
 
     // ── Company operations ──────────────────────────────────────────────────
@@ -43,7 +46,13 @@ public class InternshipService {
         Internship internship = new Internship();
         applyFields(internship, request, company);
         internship.setStatus("OPEN"); // always OPEN on creation; ignore request.status here
-        return InternshipResponse.from(internshipRepository.save(internship));
+        Internship saved = internshipRepository.save(internship);
+
+        // Automatically run risk assessment when company publishes an internship
+        riskAssessmentService.analyzeInternship(saved.getId());
+        com.internship.platform.entity.RiskAssessment risk =
+                riskAssessmentService.getAssessmentEntity(saved).orElse(null);
+        return InternshipResponse.from(saved, risk);
     }
 
     @Transactional(readOnly = true)
@@ -51,7 +60,11 @@ public class InternshipService {
         Company company = resolveCompany(email);
         return internshipRepository.findByCompanyOrderByIdDesc(company)
                 .stream()
-                .map(InternshipResponse::from)
+                .map(in -> {
+                    com.internship.platform.entity.RiskAssessment risk =
+                            riskAssessmentService.getAssessmentEntity(in).orElse(null);
+                    return InternshipResponse.from(in, risk);
+                })
                 .toList();
     }
 
@@ -60,7 +73,9 @@ public class InternshipService {
         Internship internship = findById(id);
         Company company = resolveCompany(email);
         assertOwnership(internship, company);
-        return InternshipResponse.from(internship);
+        com.internship.platform.entity.RiskAssessment risk =
+                riskAssessmentService.getAssessmentEntity(internship).orElse(null);
+        return InternshipResponse.from(internship, risk);
     }
 
     @Transactional
@@ -72,7 +87,13 @@ public class InternshipService {
         if (request.getStatus() != null) {
             internship.setStatus(request.getStatus());
         }
-        return InternshipResponse.from(internshipRepository.save(internship));
+        Internship saved = internshipRepository.save(internship);
+
+        // Re-trigger risk assessment on update
+        riskAssessmentService.analyzeInternship(saved.getId());
+        com.internship.platform.entity.RiskAssessment risk =
+                riskAssessmentService.getAssessmentEntity(saved).orElse(null);
+        return InternshipResponse.from(saved, risk);
     }
 
     @Transactional
@@ -87,7 +108,10 @@ public class InternshipService {
 
     @Transactional(readOnly = true)
     public InternshipResponse getById(Long id) {
-        return InternshipResponse.from(findById(id));
+        Internship in = findById(id);
+        com.internship.platform.entity.RiskAssessment risk =
+                riskAssessmentService.getAssessmentEntity(in).orElse(null);
+        return InternshipResponse.from(in, risk);
     }
 
     /**
@@ -98,7 +122,11 @@ public class InternshipService {
     public Page<InternshipResponse> search(InternshipSearchParams params, Pageable pageable) {
         return internshipRepository
                 .findAll(InternshipSpecification.fromParams(params), pageable)
-                .map(InternshipResponse::from);
+                .map(in -> {
+                    com.internship.platform.entity.RiskAssessment risk =
+                            riskAssessmentService.getAssessmentEntity(in).orElse(null);
+                    return InternshipResponse.from(in, risk);
+                });
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

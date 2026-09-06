@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { deleteInternship, getMyInternships } from '../../api/internships.js'
+import { analyzeRisk } from '../../api/risk.js'
+import RiskBadge from '../../components/RiskBadge.jsx'
 
 const WORK_MODE_COLORS = {
   REMOTE: 'bg-sky-100 text-sky-700',
@@ -11,20 +13,29 @@ const WORK_MODE_COLORS = {
 function StatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-        status === 'OPEN'
-          ? 'bg-emerald-100 text-emerald-700'
-          : 'bg-slate-100 text-slate-500'
-      }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status === 'OPEN'
+        ? 'bg-emerald-100 text-emerald-700'
+        : 'bg-slate-100 text-slate-500'
+        }`}
     >
       {status}
     </span>
   )
 }
 
-function InternshipCard({ internship, onDelete }) {
+function InternshipCard({ internship, onDelete, onReanalyze }) {
+  const [analyzing, setAnalyzing] = useState(false)
   const workModeClass =
     WORK_MODE_COLORS[internship.workMode] ?? 'bg-slate-100 text-slate-600'
+
+  async function handleRiskClick() {
+    setAnalyzing(true)
+    try {
+      await onReanalyze(internship.id)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -32,7 +43,15 @@ function InternshipCard({ internship, onDelete }) {
         <h3 className="text-base font-semibold leading-snug text-slate-900">
           {internship.title}
         </h3>
-        <StatusBadge status={internship.status} />
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          <RiskBadge
+            level={internship.riskLevel}
+            score={internship.riskScore}
+            reasons={internship.riskReasons}
+            internshipId={internship.id}
+          />
+          <StatusBadge status={internship.status} />
+        </div>
       </div>
 
       <div className="mb-4 space-y-1.5 text-sm text-slate-500">
@@ -60,7 +79,16 @@ function InternshipCard({ internship, onDelete }) {
         )}
       </div>
 
-      <div className="mt-auto flex gap-2">
+      <div className="mt-auto flex items-center gap-2 pt-3 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={handleRiskClick}
+          disabled={analyzing}
+          title="Re-run automated risk assessment"
+          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-center text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          {analyzing ? '...' : '🔄 Risk'}
+        </button>
         <Link
           to={`/company/internships/${internship.id}/edit`}
           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-center text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -69,7 +97,7 @@ function InternshipCard({ internship, onDelete }) {
         </Link>
         <button
           onClick={() => onDelete(internship.id)}
-          className="flex-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
         >
           Delete
         </button>
@@ -98,6 +126,21 @@ function MyInternshipsPage() {
       setInternships((prev) => prev.filter((i) => i.id !== id))
     } catch {
       setError('Failed to delete. Please try again.')
+    }
+  }
+
+  async function handleReanalyze(id) {
+    try {
+      const { data } = await analyzeRisk(id)
+      setInternships((prev) =>
+        prev.map((i) =>
+          i.id === id
+            ? { ...i, riskScore: data.score, riskLevel: data.level, riskReasons: data.reasons }
+            : i
+        )
+      )
+    } catch {
+      setError('Failed to re-analyze risk score. Please try again.')
     }
   }
 
@@ -152,6 +195,7 @@ function MyInternshipsPage() {
               key={internship.id}
               internship={internship}
               onDelete={handleDelete}
+              onReanalyze={handleReanalyze}
             />
           ))}
         </div>

@@ -23,13 +23,22 @@ public class InternshipResponse {
     private String visaInformation;
     private LocalDate deadline;
     private String status;
+    private Integer riskScore;
+    private String riskLevel;
+    private java.util.List<String> riskReasons;
 
     public static InternshipResponse from(Internship internship) {
+        return from(internship, null);
+    }
+
+    public static InternshipResponse from(Internship internship, com.internship.platform.entity.RiskAssessment risk) {
         InternshipResponse r = new InternshipResponse();
         r.setId(internship.getId());
         // Company is already loaded in service layer before calling from(); safe to access.
-        r.setCompanyId(internship.getCompany().getId());
-        r.setCompanyName(internship.getCompany().getCompanyName());
+        if (internship.getCompany() != null) {
+            r.setCompanyId(internship.getCompany().getId());
+            r.setCompanyName(internship.getCompany().getCompanyName());
+        }
         r.setTitle(internship.getTitle());
         r.setDescription(internship.getDescription());
         r.setRequiredSkills(internship.getRequiredSkills());
@@ -43,6 +52,17 @@ public class InternshipResponse {
         r.setVisaInformation(internship.getVisaInformation());
         r.setDeadline(internship.getDeadline());
         r.setStatus(internship.getStatus());
+
+        if (risk != null) {
+            r.setRiskScore(risk.getScore());
+            r.setRiskLevel(risk.getLevel().name());
+            if (risk.getReasons() != null && !risk.getReasons().isBlank()) {
+                r.setRiskReasons(java.util.Arrays.stream(risk.getReasons().split("\n"))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList());
+            }
+        }
         return r;
     }
 
@@ -93,4 +113,13 @@ public class InternshipResponse {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Integer getRiskScore() { return riskScore; }
+    public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
+
+    public String getRiskLevel() { return riskLevel; }
+    public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
+
+    public java.util.List<String> getRiskReasons() { return riskReasons; }
+    public void setRiskReasons(java.util.List<String> riskReasons) { this.riskReasons = riskReasons; }
 }

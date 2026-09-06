@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { searchInternships } from '../../api/internships.js'
+import RiskBadge from '../../components/RiskBadge.jsx'
 
 const INPUT =
   'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400'
@@ -28,43 +29,62 @@ function InternshipCard({ internship }) {
     WORK_MODE_COLORS[internship.workMode] ?? 'bg-slate-100 text-slate-600'
 
   return (
-    <Link
-      to={`/internships/${internship.id}`}
-      className="group block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
+    <div
+      className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="text-base font-semibold text-slate-900 group-hover:text-indigo-700">
-          {internship.title}
-        </h3>
-        <span
-          className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${workModeClass}`}
-        >
-          {internship.workMode}
-        </span>
-      </div>
+      <div>
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <Link
+            to={`/internships/${internship.id}`}
+            className="text-base font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors"
+          >
+            {internship.title}
+          </Link>
+          <span
+            className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${workModeClass}`}
+          >
+            {internship.workMode}
+          </span>
+        </div>
 
-      <p className="mb-3 text-sm font-medium text-slate-500">{internship.companyName}</p>
+        <p className="mb-3 text-sm font-medium text-slate-500">{internship.companyName}</p>
 
-      <div className="space-y-1 text-sm text-slate-500">
-        <p>
-          📍 {internship.country}
-          {internship.city ? `, ${internship.city}` : ''}
-        </p>
-        {internship.duration && <p>⏱ {internship.duration}</p>}
-        {internship.stipend != null && (
+        <div className="space-y-1 text-sm text-slate-500">
           <p>
-            💰 {internship.stipend} {internship.currency ?? ''}
-            <span className="text-slate-400"> / month</span>
+            📍 {internship.country}
+            {internship.city ? `, ${internship.city}` : ''}
           </p>
-        )}
-        {internship.deadline && (
-          <p className="text-xs text-slate-400">⏳ Deadline: {internship.deadline}</p>
-        )}
-        {internship.visaInformation && (
-          <p className="text-xs font-medium text-emerald-600">✓ Visa info provided</p>
-        )}
+          {internship.duration && <p>⏱ {internship.duration}</p>}
+          {internship.stipend != null && (
+            <p>
+              💰 {internship.stipend} {internship.currency ?? ''}
+              <span className="text-slate-400"> / month</span>
+            </p>
+          )}
+          {internship.deadline && (
+            <p className="text-xs text-slate-400">⏳ Deadline: {internship.deadline}</p>
+          )}
+          {internship.visaInformation && (
+            <p className="text-xs font-medium text-emerald-600">✓ Visa info provided</p>
+          )}
+        </div>
       </div>
-    </Link>
+
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+        <RiskBadge
+          level={internship.riskLevel}
+          score={internship.riskScore}
+          reasons={internship.riskReasons}
+          internshipId={internship.id}
+        />
+        <Link
+          to={`/internships/${internship.id}`}
+          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+        >
+          Details →
+        </Link>
+      </div>
+    </div>
   )
 }
 

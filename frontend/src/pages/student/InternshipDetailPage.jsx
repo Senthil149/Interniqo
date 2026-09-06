@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getInternship } from '../../api/internships.js'
+import RiskBadge from '../../components/RiskBadge.jsx'
 
 const WORK_MODE_COLORS = {
   REMOTE: 'bg-sky-100 text-sky-700',
@@ -76,15 +77,23 @@ function InternshipDetailPage() {
             <h1 className="text-2xl font-bold text-slate-900">{internship.title}</h1>
             <p className="mt-1 text-base text-slate-500">{internship.companyName}</p>
           </div>
-          <span
-            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
-              internship.status === 'OPEN'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-slate-100 text-slate-500'
-            }`}
-          >
-            {internship.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <RiskBadge
+              level={internship.riskLevel}
+              score={internship.riskScore}
+              reasons={internship.riskReasons}
+              internshipId={internship.id}
+            />
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
+                internship.status === 'OPEN'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-slate-100 text-slate-500'
+              }`}
+            >
+              {internship.status}
+            </span>
+          </div>
         </div>
 
         {/* Quick-facts strip */}

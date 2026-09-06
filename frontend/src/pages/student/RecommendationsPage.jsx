@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { generateRecommendations, getRecommendations } from '../../api/recommendations.js'
+import RiskBadge from '../../components/RiskBadge.jsx'
 
 const INPUT =
   'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400'
@@ -120,9 +121,17 @@ function RecommendationCard({ rec }) {
       )}
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-        <span className="text-xs text-slate-400">
-          {rec.deadline ? `Deadline: ${rec.deadline}` : 'Open Application'}
-        </span>
+        <div className="flex items-center gap-2">
+          <RiskBadge
+            level={rec.riskLevel}
+            score={rec.riskScore}
+            reasons={rec.riskReasons}
+            internshipId={rec.internshipId}
+          />
+          <span className="text-xs text-slate-400">
+            {rec.deadline ? `Deadline: ${rec.deadline}` : 'Open Application'}
+          </span>
+        </div>
         <Link
           to={`/internships/${rec.internshipId}`}
           className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
