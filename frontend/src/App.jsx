@@ -6,35 +6,99 @@ import HealthPage from './pages/HealthPage.jsx'
 import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
+import MyInternshipsPage from './pages/company/MyInternshipsPage.jsx'
+import CreateInternshipPage from './pages/company/CreateInternshipPage.jsx'
+import EditInternshipPage from './pages/company/EditInternshipPage.jsx'
+import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
+import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
+
+const NAV_LINK =
+  'font-medium text-slate-600 hover:text-slate-900 transition-colors'
+const NAV_LINK_ACTIVE =
+  'font-medium text-indigo-600'
 
 function NavBar() {
   const { isAuthenticated, logout, user } = useAuth()
 
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <nav className="mx-auto flex max-w-3xl flex-wrap items-center gap-4 px-6 py-4 text-sm">
-        <NavLink className="font-medium text-slate-700 hover:text-slate-900" to="/">
-          Home
+    <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-6 py-3 text-sm">
+        {/* Brand */}
+        <NavLink
+          to="/"
+          className="mr-2 text-base font-bold text-indigo-600 tracking-tight"
+        >
+          Interniqo
         </NavLink>
-        <NavLink className="font-medium text-slate-700 hover:text-slate-900" to="/health">
+
+        {/* Company nav links */}
+        {isAuthenticated && user?.role === 'COMPANY' && (
+          <>
+            <NavLink
+              to="/company/internships"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              My Listings
+            </NavLink>
+            <NavLink
+              to="/company/internships/new"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              Post Internship
+            </NavLink>
+          </>
+        )}
+
+        {/* Student nav links */}
+        {isAuthenticated && user?.role === 'STUDENT' && (
+          <NavLink
+            to="/student/internships"
+            className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+          >
+            Browse Internships
+          </NavLink>
+        )}
+
+        {/* Health — always visible */}
+        <NavLink
+          to="/health"
+          className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+        >
           Health
         </NavLink>
+
+        {/* Auth section — pushed to the right */}
         {isAuthenticated ? (
           <>
-            <NavLink className="font-medium text-slate-700 hover:text-slate-900" to="/dashboard">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `ml-auto ${isActive ? NAV_LINK_ACTIVE : NAV_LINK}`}
+            >
               Dashboard
             </NavLink>
-            <span className="ml-auto text-slate-500">{user?.email}</span>
-            <button className="font-medium text-slate-700 hover:text-slate-900" type="button" onClick={logout}>
+            <span className="max-w-xs truncate text-slate-400">{user?.email}</span>
+            <button
+              type="button"
+              className={NAV_LINK}
+              onClick={logout}
+            >
               Sign out
             </button>
           </>
         ) : (
           <>
-            <NavLink className="ml-auto font-medium text-slate-700 hover:text-slate-900" to="/login">
+            <NavLink
+              to="/login"
+              className={({ isActive }) =>
+                `ml-auto ${isActive ? NAV_LINK_ACTIVE : NAV_LINK}`}
+            >
               Sign in
             </NavLink>
-            <NavLink className="font-medium text-slate-700 hover:text-slate-900" to="/register">
+            <NavLink
+              to="/register"
+              className="rounded-lg bg-indigo-600 px-3 py-1.5 font-semibold text-white transition hover:bg-indigo-700"
+            >
               Register
             </NavLink>
           </>
@@ -48,17 +112,66 @@ function AppRoutes() {
   return (
     <>
       <NavBar />
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-6 py-10">
         <Routes>
+          {/* Public */}
           <Route path="/" element={<HomePage />} />
           <Route path="/health" element={<HealthPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Generic authenticated */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Detail page — any authenticated user (company or student) */}
+          <Route
+            path="/internships/:id"
+            element={
+              <ProtectedRoute>
+                <InternshipDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Company-only */}
+          <Route
+            path="/company/internships"
+            element={
+              <ProtectedRoute requiredRole="COMPANY">
+                <MyInternshipsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/company/internships/new"
+            element={
+              <ProtectedRoute requiredRole="COMPANY">
+                <CreateInternshipPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/company/internships/:id/edit"
+            element={
+              <ProtectedRoute requiredRole="COMPANY">
+                <EditInternshipPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Student-only */}
+          <Route
+            path="/student/internships"
+            element={
+              <ProtectedRoute requiredRole="STUDENT">
+                <InternshipSearchPage />
               </ProtectedRoute>
             }
           />
