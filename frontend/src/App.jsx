@@ -17,6 +17,7 @@ import RecommendationsPage from './pages/student/RecommendationsPage.jsx'
 import MyApplicationsPage from './pages/student/MyApplicationsPage.jsx'
 import VerifyEmailPage from './pages/VerifyEmailPage.jsx'
 import VerifyCredentialPage from './pages/VerifyCredentialPage.jsx'
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx'
 import CompanyVerificationBanner from './components/CompanyVerificationBanner.jsx'
 
 const NAV_LINK =
@@ -90,6 +91,16 @@ function NavBar() {
               My Resume
             </NavLink>
           </>
+        )}
+
+        {/* Admin nav links */}
+        {isAuthenticated && user?.role === 'ADMIN' && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+          >
+            Admin Console
+          </NavLink>
         )}
 
         {/* Public Verify Credential & Health */}
@@ -247,6 +258,16 @@ function AppRoutes() {
             element={
               <ProtectedRoute requiredRole="STUDENT">
                 <ResumeUploadPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin-only */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <AdminDashboardPage />
               </ProtectedRoute>
             }
           />

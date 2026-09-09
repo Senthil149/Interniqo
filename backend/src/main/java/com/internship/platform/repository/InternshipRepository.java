@@ -11,4 +11,10 @@ public interface InternshipRepository extends JpaRepository<Internship, Long>,
         JpaSpecificationExecutor<Internship> {
 
     List<Internship> findByCompanyOrderByIdDesc(Company company);
+
+    List<Internship> findAllByOrderByIdDesc();
+
+    List<Internship> findByStatusOrderByIdDesc(String status);
+
+    long countByStatus(String status);
 }

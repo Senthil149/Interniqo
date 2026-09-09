@@ -16,4 +16,8 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     List<EmailVerification> findByCompanyOrderByExpiryDesc(Company company);
 
     Optional<EmailVerification> findTopByCompanyAndVerifiedAtIsNullOrderByExpiryDesc(Company company);
+
+    List<EmailVerification> findAllByOrderByIdDesc();
+
+    long countByVerifiedAtIsNotNull();
 }
