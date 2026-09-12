@@ -337,6 +337,7 @@ public class AdminService {
 
         if (user.getRole() == UserRole.STUDENT) {
             studentRepository.findByUser(user).ifPresent(s -> resp.setStudentId(s.getId()));
+            resp.setEmailVerified(emailVerificationRepository.isUserEmailVerified(user));
         } else if (user.getRole() == UserRole.COMPANY) {
             companyRepository.findByUser(user).ifPresent(c -> {
                 resp.setCompanyId(c.getId());

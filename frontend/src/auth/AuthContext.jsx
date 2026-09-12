@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => {
     async function register(payload) {
       const { data } = await api.post('/api/auth/register', payload)
+      return data
+    }
+
+    async function verifyCode(payload) {
+      const { data } = await api.post('/api/auth/verify-code', payload)
       persistAuth(data)
       setUser(data.user)
       return data
@@ -43,6 +48,7 @@ export function AuthProvider({ children }) {
       user,
       isAuthenticated: Boolean(user),
       register,
+      verifyCode,
       login,
       refreshUser,
       logout,

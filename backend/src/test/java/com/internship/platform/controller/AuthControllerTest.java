@@ -2,11 +2,16 @@ package com.internship.platform.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.internship.platform.dto.AuthResponse;
+import com.internship.platform.dto.ForgotPasswordRequest;
+import com.internship.platform.dto.ForgotPasswordResponse;
 import com.internship.platform.dto.LoginRequest;
 import com.internship.platform.dto.RefreshRequest;
 import com.internship.platform.dto.RegisterRequest;
+import com.internship.platform.dto.RegisterResponse;
 import com.internship.platform.dto.ResendVerificationRequest;
 import com.internship.platform.dto.ResendVerificationResponse;
+import com.internship.platform.dto.ResetPasswordRequest;
+import com.internship.platform.dto.ResetPasswordResponse;
 import com.internship.platform.dto.UserSummary;
 import com.internship.platform.dto.VerifyEmailResponse;
 import com.internship.platform.entity.UserRole;
@@ -47,15 +52,17 @@ class AuthControllerTest {
     private EmailVerificationService emailVerificationService;
 
     @Test
-    @DisplayName("POST /api/auth/register returns 201 Created and JWT tokens")
+    @DisplayName("POST /api/auth/register returns 201 Created and RegisterResponse with requiresVerification=true")
     void registerReturnsCreatedTokens() throws Exception {
-        UserSummary summary = new UserSummary();
-        summary.setId(1L);
-        summary.setName("Ada");
-        summary.setEmail("ada@example.com");
-        summary.setRole(UserRole.STUDENT);
+        RegisterResponse regResponse = new RegisterResponse(
+                "ada@example.com",
+                "Ada",
+                UserRole.STUDENT,
+                true,
+                "Please enter verification code"
+        );
         when(authService.register(any(RegisterRequest.class)))
-                .thenReturn(new AuthResponse("access", "refresh", summary));
+                .thenReturn(regResponse);
 
         RegisterRequest request = new RegisterRequest();
         request.setName("Ada");
@@ -67,9 +74,50 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.requiresVerification").value(true))
+                .andExpect(jsonPath("$.email").value("ada@example.com"))
+                .andExpect(jsonPath("$.role").value("STUDENT"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/verify-code returns 200 OK and JWT tokens")
+    void verifyCodeReturnsTokens() throws Exception {
+        UserSummary summary = new UserSummary();
+        summary.setId(1L);
+        summary.setName("Ada");
+        summary.setEmail("ada@example.com");
+        summary.setRole(UserRole.STUDENT);
+
+        when(authService.verifyCode(any(com.internship.platform.dto.VerifyCodeRequest.class)))
+                .thenReturn(new AuthResponse("access", "refresh", summary));
+
+        com.internship.platform.dto.VerifyCodeRequest request =
+                new com.internship.platform.dto.VerifyCodeRequest("ada@example.com", "123456");
+
+        mockMvc.perform(post("/api/auth/verify-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("access"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh"))
-                .andExpect(jsonPath("$.user.role").value("STUDENT"));
+                .andExpect(jsonPath("$.user.email").value("ada@example.com"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/resend-code returns 200 OK and ResendCodeResponse")
+    void resendCodeReturnsSuccess() throws Exception {
+        when(authService.resendCode(any(com.internship.platform.dto.ResendCodeRequest.class)))
+                .thenReturn(new com.internship.platform.dto.ResendCodeResponse(true, "Code sent"));
+
+        com.internship.platform.dto.ResendCodeRequest request =
+                new com.internship.platform.dto.ResendCodeRequest("ada@example.com");
+
+        mockMvc.perform(post("/api/auth/resend-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Code sent"));
     }
 
     @Test
@@ -170,6 +218,44 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.notice").exists());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/forgot-password returns generic success response")
+    void forgotPasswordReturnsSuccess() throws Exception {
+        ForgotPasswordRequest request = new ForgotPasswordRequest("student@example.com");
+        ForgotPasswordResponse response = new ForgotPasswordResponse(
+                true,
+                "If an account with that email exists, we have sent a password reset link."
+        );
+
+        when(authService.forgotPassword(any(ForgotPasswordRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/reset-password returns success on valid reset")
+    void resetPasswordReturnsSuccess() throws Exception {
+        ResetPasswordRequest request = new ResetPasswordRequest("reset_token_123", "NewSecret123!");
+        ResetPasswordResponse response = new ResetPasswordResponse(
+                true,
+                "Password has been reset successfully."
+        );
+
+        when(authService.resetPassword(any(ResetPasswordRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Password has been reset successfully."));
     }
 
     private org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth(String username, String role) {

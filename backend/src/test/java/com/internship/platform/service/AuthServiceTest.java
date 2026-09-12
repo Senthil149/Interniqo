@@ -78,7 +78,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("register: Student registration creates User, Student entity, and returns JWT tokens")
+    @DisplayName("register: Student registration creates User, Student entity, triggers 6-digit code, and returns RegisterResponse")
     void registerStudent_success() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Alice Student");
@@ -89,24 +89,23 @@ class AuthServiceTest {
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Secret123!")).thenReturn("hashed_secret");
         when(userRepository.save(any(User.class))).thenReturn(studentUser);
-        when(jwtService.createAccessToken(any(User.class))).thenReturn("access_token_123");
-        when(jwtService.createRefreshToken(any(User.class))).thenReturn("refresh_token_123");
 
-        AuthResponse response = authService.register(request);
+        com.internship.platform.dto.RegisterResponse response = authService.register(request);
 
         assertNotNull(response);
-        assertEquals("access_token_123", response.getAccessToken());
-        assertEquals("refresh_token_123", response.getRefreshToken());
-        assertEquals(UserRole.STUDENT, response.getUser().getRole());
-        assertEquals("alice@example.com", response.getUser().getEmail());
+        assertEquals(UserRole.STUDENT, response.getRole());
+        assertEquals("alice@example.com", response.getEmail());
+        assertTrue(response.isRequiresVerification());
 
         verify(studentRepository, times(1)).save(any(Student.class));
         verify(companyRepository, never()).save(any(Company.class));
         verify(emailVerificationService, never()).createAndSendVerification(any(Company.class));
+        verify(emailVerificationService, times(1)).createAndSendVerification(any(User.class));
+        verify(jwtService, never()).createAccessToken(any());
     }
 
     @Test
-    @DisplayName("register: Company registration creates User, Company entity, triggers email verification token, and returns tokens")
+    @DisplayName("register: Company registration creates User, Company entity, triggers 6-digit code, and returns RegisterResponse")
     void registerCompany_success() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Acme Hiring");
@@ -126,22 +125,18 @@ class AuthServiceTest {
         when(passwordEncoder.encode("Secret123!")).thenReturn("hashed_secret");
         when(userRepository.save(any(User.class))).thenReturn(companyUser);
         when(companyRepository.save(any(Company.class))).thenReturn(company);
-        when(companyRepository.findByUser(companyUser)).thenReturn(Optional.of(company));
-        when(jwtService.createAccessToken(any(User.class))).thenReturn("access_token_456");
-        when(jwtService.createRefreshToken(any(User.class))).thenReturn("refresh_token_456");
 
-        AuthResponse response = authService.register(request);
+        com.internship.platform.dto.RegisterResponse response = authService.register(request);
 
         assertNotNull(response);
-        assertEquals("access_token_456", response.getAccessToken());
-        assertEquals("refresh_token_456", response.getRefreshToken());
-        assertEquals(UserRole.COMPANY, response.getUser().getRole());
-        assertFalse(Boolean.TRUE.equals(response.getUser().getEmailVerified()));
-        assertEquals(10L, response.getUser().getCompanyId());
+        assertEquals(UserRole.COMPANY, response.getRole());
+        assertEquals("careers@acme.com", response.getEmail());
+        assertTrue(response.isRequiresVerification());
 
         verify(companyRepository, times(1)).save(any(Company.class));
         verify(emailVerificationService, times(1)).createAndSendVerification(any(Company.class));
         verify(studentRepository, never()).save(any(Student.class));
+        verify(jwtService, never()).createAccessToken(any());
     }
 
     @Test
@@ -177,13 +172,14 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("login: Valid credentials authenticate and return tokens")
+    @DisplayName("login: Valid credentials with verified student email returns tokens")
     void login_success() {
         LoginRequest request = new LoginRequest();
         request.setEmail("alice@example.com");
         request.setPassword("Secret123!");
 
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(studentUser));
+        when(emailVerificationService.isUserEmailVerified(studentUser)).thenReturn(true);
         when(jwtService.createAccessToken(studentUser)).thenReturn("access_token_login");
         when(jwtService.createRefreshToken(studentUser)).thenReturn("refresh_token_login");
 
@@ -193,6 +189,70 @@ class AuthServiceTest {
         assertEquals("access_token_login", response.getAccessToken());
         assertEquals("refresh_token_login", response.getRefreshToken());
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    @Test
+    @DisplayName("login: Unverified student email throws 403 FORBIDDEN")
+    void login_unverifiedStudent_throwsForbidden() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("alice@example.com");
+        request.setPassword("Secret123!");
+
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(studentUser));
+        when(emailVerificationService.isUserEmailVerified(studentUser)).thenReturn(false);
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.login(request));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        assertTrue(ex.getMessage().contains("student email has not been verified"));
+    }
+
+    @Test
+    @DisplayName("login: Unverified company email throws 403 FORBIDDEN")
+    void login_unverifiedCompany_throwsForbidden() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("careers@acme.com");
+        request.setPassword("Secret123!");
+
+        Company unverifiedCompany = new Company();
+        unverifiedCompany.setEmailVerified(false);
+
+        when(userRepository.findByEmail("careers@acme.com")).thenReturn(Optional.of(companyUser));
+        when(companyRepository.findByUser(companyUser)).thenReturn(Optional.of(unverifiedCompany));
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.login(request));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        assertTrue(ex.getMessage().contains("company email has not been verified"));
+    }
+
+    @Test
+    @DisplayName("verifyCode: Correct code activates account and returns JWT tokens")
+    void verifyCode_success() {
+        com.internship.platform.dto.VerifyCodeRequest request =
+                new com.internship.platform.dto.VerifyCodeRequest("alice@example.com", "123456");
+
+        when(emailVerificationService.verifyCode(request)).thenReturn(studentUser);
+        when(jwtService.createAccessToken(studentUser)).thenReturn("access_token_code");
+        when(jwtService.createRefreshToken(studentUser)).thenReturn("refresh_token_code");
+
+        AuthResponse response = authService.verifyCode(request);
+
+        assertNotNull(response);
+        assertEquals("access_token_code", response.getAccessToken());
+        assertEquals("refresh_token_code", response.getRefreshToken());
+    }
+
+    @Test
+    @DisplayName("resendCode: Delegates to emailVerificationService")
+    void resendCode_success() {
+        com.internship.platform.dto.ResendCodeRequest request =
+                new com.internship.platform.dto.ResendCodeRequest("alice@example.com");
+
+        when(emailVerificationService.resendVerificationCode(request))
+                .thenReturn(new com.internship.platform.dto.ResendCodeResponse(true, "Code sent"));
+
+        com.internship.platform.dto.ResendCodeResponse response = authService.resendCode(request);
+        assertTrue(response.isSuccess());
+        assertEquals("Code sent", response.getMessage());
     }
 
     @Test
@@ -250,5 +310,41 @@ class AuthServiceTest {
         assertEquals(UserRole.COMPANY, summary.getRole());
         assertTrue(Boolean.TRUE.equals(summary.getEmailVerified()));
         assertEquals(25L, summary.getCompanyId());
+    }
+
+    @Test
+    @DisplayName("me: Returns UserSummary with student email verification status")
+    void me_studentUser_returnsSummary() {
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(studentUser));
+        when(emailVerificationService.isUserEmailVerified(studentUser)).thenReturn(true);
+
+        UserSummary summary = authService.me("alice@example.com");
+
+        assertNotNull(summary);
+        assertEquals(UserRole.STUDENT, summary.getRole());
+        assertTrue(Boolean.TRUE.equals(summary.getEmailVerified()));
+        assertNull(summary.getCompanyId());
+    }
+
+    @Test
+    @DisplayName("forgotPassword: Delegates to emailVerificationService")
+    void forgotPassword_delegates() {
+        com.internship.platform.dto.ForgotPasswordRequest req = new com.internship.platform.dto.ForgotPasswordRequest("test@example.com");
+        com.internship.platform.dto.ForgotPasswordResponse expected = new com.internship.platform.dto.ForgotPasswordResponse(true, "Sent");
+        when(emailVerificationService.forgotPassword(req)).thenReturn(expected);
+
+        com.internship.platform.dto.ForgotPasswordResponse resp = authService.forgotPassword(req);
+        assertEquals(expected, resp);
+    }
+
+    @Test
+    @DisplayName("resetPassword: Delegates to emailVerificationService")
+    void resetPassword_delegates() {
+        com.internship.platform.dto.ResetPasswordRequest req = new com.internship.platform.dto.ResetPasswordRequest("reset_token", "newSecret123!");
+        com.internship.platform.dto.ResetPasswordResponse expected = new com.internship.platform.dto.ResetPasswordResponse(true, "Reset");
+        when(emailVerificationService.resetPassword(req)).thenReturn(expected);
+
+        com.internship.platform.dto.ResetPasswordResponse resp = authService.resetPassword(req);
+        assertEquals(expected, resp);
     }
 }

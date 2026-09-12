@@ -225,6 +225,45 @@ class EndToEndFlowTest {
         });
         when(emailVerificationRepository.findByToken(anyString())).thenAnswer(inv ->
                 Optional.ofNullable(tokenStore.get(inv.getArgument(0))));
+        when(emailVerificationRepository.isUserEmailVerified(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            return tokenStore.values().stream().anyMatch(ev -> ev.getUser() != null &&
+                    ev.getUser().getId().equals(u.getId()) &&
+                    ev.getVerifiedAt() != null &&
+                    !ev.getToken().startsWith("reset_"));
+        });
+        when(emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(any(User.class), anyString()))
+                .thenAnswer(inv -> {
+                    User u = inv.getArgument(0);
+                    String t = inv.getArgument(1);
+                    return tokenStore.values().stream()
+                            .filter(ev -> ev.getUser() != null && ev.getUser().getId().equals(u.getId())
+                                    && ev.getToken().equals(t) && ev.getVerifiedAt() == null)
+                            .findFirst();
+                });
+        when(emailVerificationRepository.findTopByCompanyAndTokenAndVerifiedAtIsNull(any(Company.class), anyString()))
+                .thenAnswer(inv -> {
+                    Company c = inv.getArgument(0);
+                    String t = inv.getArgument(1);
+                    return tokenStore.values().stream()
+                            .filter(ev -> ev.getCompany() != null && ev.getCompany().getId().equals(c.getId())
+                                    && ev.getToken().equals(t) && ev.getVerifiedAt() == null)
+                            .findFirst();
+                });
+        when(emailVerificationRepository.findByUserOrderByExpiryDesc(any(User.class)))
+                .thenAnswer(inv -> {
+                    User u = inv.getArgument(0);
+                    return tokenStore.values().stream()
+                            .filter(ev -> ev.getUser() != null && ev.getUser().getId().equals(u.getId()))
+                            .toList();
+                });
+        when(emailVerificationRepository.findByCompanyOrderByExpiryDesc(any(Company.class)))
+                .thenAnswer(inv -> {
+                    Company c = inv.getArgument(0);
+                    return tokenStore.values().stream()
+                            .filter(ev -> ev.getCompany() != null && ev.getCompany().getId().equals(c.getId()))
+                            .toList();
+                });
 
         credentialRepository = mock(CredentialRepository.class);
         when(credentialRepository.save(any(Credential.class))).thenAnswer(inv -> {
@@ -270,7 +309,9 @@ class EndToEndFlowTest {
         emailVerificationService = new EmailVerificationService(
                 emailVerificationRepository,
                 companyRepository,
-                emailService
+                userRepository,
+                emailService,
+                passwordEncoder
         );
 
         authService = new AuthService(
@@ -344,11 +385,11 @@ class EndToEndFlowTest {
         studentReg.setPassword("StudentPass123!");
         studentReg.setRole(UserRole.STUDENT);
 
-        AuthResponse studentAuth = authService.register(studentReg);
-        assertNotNull(studentAuth);
-        assertEquals("mock_access_jwt", studentAuth.getAccessToken());
-        assertEquals(UserRole.STUDENT, studentAuth.getUser().getRole());
-        assertEquals(studentEmail, studentAuth.getUser().getEmail());
+        RegisterResponse studentRegResp = authService.register(studentReg);
+        assertNotNull(studentRegResp);
+        assertTrue(studentRegResp.isRequiresVerification());
+        assertEquals(UserRole.STUDENT, studentRegResp.getRole());
+        assertEquals(studentEmail, studentRegResp.getEmail());
 
         String companyEmail = "recruiting@quantumleap.tech";
         RegisterRequest companyReg = new RegisterRequest();
@@ -358,11 +399,10 @@ class EndToEndFlowTest {
         companyReg.setRole(UserRole.COMPANY);
         companyReg.setCompanyName("Quantum Leap Technologies");
 
-        AuthResponse companyAuth = authService.register(companyReg);
-        assertNotNull(companyAuth);
-        assertEquals(UserRole.COMPANY, companyAuth.getUser().getRole());
-        assertFalse(Boolean.TRUE.equals(companyAuth.getUser().getEmailVerified()),
-                "Newly registered company must start with email_verified = false");
+        RegisterResponse companyRegResp = authService.register(companyReg);
+        assertNotNull(companyRegResp);
+        assertTrue(companyRegResp.isRequiresVerification());
+        assertEquals(UserRole.COMPANY, companyRegResp.getRole());
 
         // Verify initial entities in database
         User studentUser = userEmailStore.get(studentEmail);
@@ -374,10 +414,28 @@ class EndToEndFlowTest {
                 .findFirst().orElseThrow();
         assertFalse(company.isEmailVerified());
 
-        // Verify that company registration automatically triggered email verification token generation
-        assertEquals(1, tokenStore.size(), "Verification token must be generated upon company registration");
-        String verificationToken = tokenStore.keySet().iterator().next();
+        // Verify that registration automatically triggered 6-digit verification code generation for both student and company
+        assertEquals(2, tokenStore.size(), "Verification codes must be generated upon student and company registration");
+        EmailVerification studentVerification = tokenStore.values().stream()
+                .filter(ev -> ev.getUser() != null)
+                .findFirst().orElseThrow();
+        String studentCode = studentVerification.getToken();
+        assertNotNull(studentCode);
+        assertEquals(6, studentCode.length());
+
+        EmailVerification companyVerification = tokenStore.values().stream()
+                .filter(ev -> ev.getCompany() != null)
+                .findFirst().orElseThrow();
+        String verificationToken = companyVerification.getToken();
         assertNotNull(verificationToken);
+        assertEquals(6, verificationToken.length());
+
+        // Complete student email verification via 6-digit code to receive JWT tokens
+        AuthResponse studentAuth = authService.verifyCode(new VerifyCodeRequest(studentEmail, studentCode));
+        assertNotNull(studentAuth);
+        assertEquals("mock_access_jwt", studentAuth.getAccessToken());
+        assertEquals(UserRole.STUDENT, studentAuth.getUser().getRole());
+        assertEquals(studentEmail, studentAuth.getUser().getEmail());
 
         // =========================================================================
         // STEP 2: Resume Upload & SBERT AI Profile Extraction

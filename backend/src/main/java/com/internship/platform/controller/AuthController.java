@@ -10,12 +10,20 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.internship.platform.dto.AuthResponse;
+import com.internship.platform.dto.ForgotPasswordRequest;
+import com.internship.platform.dto.ForgotPasswordResponse;
 import com.internship.platform.dto.LoginRequest;
 import com.internship.platform.dto.RefreshRequest;
 import com.internship.platform.dto.RegisterRequest;
+import com.internship.platform.dto.RegisterResponse;
+import com.internship.platform.dto.ResendCodeRequest;
+import com.internship.platform.dto.ResendCodeResponse;
 import com.internship.platform.dto.ResendVerificationRequest;
 import com.internship.platform.dto.ResendVerificationResponse;
+import com.internship.platform.dto.ResetPasswordRequest;
+import com.internship.platform.dto.ResetPasswordResponse;
 import com.internship.platform.dto.UserSummary;
+import com.internship.platform.dto.VerifyCodeRequest;
 import com.internship.platform.dto.VerifyEmailResponse;
 import com.internship.platform.service.AuthService;
 import com.internship.platform.service.EmailVerificationService;
@@ -37,8 +45,18 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
+    public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
+    }
+
+    @PostMapping("/verify-code")
+    public AuthResponse verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+        return authService.verifyCode(request);
+    }
+
+    @PostMapping("/resend-code")
+    public ResendCodeResponse resendCode(@Valid @RequestBody ResendCodeRequest request) {
+        return authService.resendCode(request);
     }
 
     @PostMapping("/login")
@@ -82,5 +100,22 @@ public class AuthController {
             email = authentication.getName();
         }
         return emailVerificationService.resendVerification(email);
+    }
+
+    /**
+     * Request password reset link.
+     * Always returns generic success response to prevent email enumeration.
+     */
+    @PostMapping("/forgot-password")
+    public ForgotPasswordResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return authService.forgotPassword(request);
+    }
+
+    /**
+     * Reset password using secure token.
+     */
+    @PostMapping("/reset-password")
+    public ResetPasswordResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return authService.resetPassword(request);
     }
 }

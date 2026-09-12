@@ -10,7 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.internship.platform.dto.AuthResponse;
 import com.internship.platform.dto.LoginRequest;
 import com.internship.platform.dto.RegisterRequest;
+import com.internship.platform.dto.RegisterResponse;
+import com.internship.platform.dto.ResendCodeRequest;
+import com.internship.platform.dto.ResendCodeResponse;
 import com.internship.platform.dto.UserSummary;
+import com.internship.platform.dto.VerifyCodeRequest;
 import com.internship.platform.entity.Company;
 import com.internship.platform.entity.Student;
 import com.internship.platform.entity.User;
@@ -52,7 +56,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         UserRole role = request.getRole();
         if (role == UserRole.ADMIN) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Admin accounts cannot be self-registered");
@@ -73,6 +77,9 @@ public class AuthService {
             Student student = new Student();
             student.setUser(user);
             studentRepository.save(student);
+
+            // Generate 6-digit code, 10m expiry, and send verification email to student (or log to console)
+            emailVerificationService.createAndSendVerification(user);
         } else if (role == UserRole.COMPANY) {
             Company company = new Company();
             company.setUser(user);
@@ -84,11 +91,17 @@ public class AuthService {
             company.setEmailVerified(false);
             company = companyRepository.save(company);
 
-            // Generate secure token, 24h expiry, and send verification email (or log to console)
+            // Generate 6-digit code, 10m expiry, and send verification email (or log to console)
             emailVerificationService.createAndSendVerification(company);
         }
 
-        return tokensFor(user);
+        return new RegisterResponse(
+                user.getEmail(),
+                user.getName(),
+                user.getRole(),
+                true,
+                "Registration successful. Please enter the 6-digit verification code sent to your email to activate your account."
+        );
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -96,7 +109,33 @@ public class AuthService {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.getPassword()));
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+
+        // Mandatory blocking verification check
+        if (user.getRole() == UserRole.COMPANY) {
+            Company company = companyRepository.findByUser(user)
+                    .or(() -> companyRepository.findByEmail(user.getEmail()))
+                    .orElse(null);
+            if (company != null && !company.isEmailVerified()) {
+                throw new ApiException(HttpStatus.FORBIDDEN,
+                        "Your company email has not been verified. Please enter your 6-digit verification code to activate your account.");
+            }
+        } else if (user.getRole() == UserRole.STUDENT) {
+            if (!emailVerificationService.isUserEmailVerified(user)) {
+                throw new ApiException(HttpStatus.FORBIDDEN,
+                        "Your student email has not been verified. Please enter your 6-digit verification code to activate your account.");
+            }
+        }
+
         return tokensFor(user);
+    }
+
+    public AuthResponse verifyCode(VerifyCodeRequest request) {
+        User user = emailVerificationService.verifyCode(request);
+        return tokensFor(user);
+    }
+
+    public ResendCodeResponse resendCode(ResendCodeRequest request) {
+        return emailVerificationService.resendVerificationCode(request);
     }
 
     public AuthResponse refresh(String refreshToken) {
@@ -115,6 +154,14 @@ public class AuthService {
         return buildUserSummary(user);
     }
 
+    public com.internship.platform.dto.ForgotPasswordResponse forgotPassword(com.internship.platform.dto.ForgotPasswordRequest request) {
+        return emailVerificationService.forgotPassword(request);
+    }
+
+    public com.internship.platform.dto.ResetPasswordResponse resetPassword(com.internship.platform.dto.ResetPasswordRequest request) {
+        return emailVerificationService.resetPassword(request);
+    }
+
     private AuthResponse tokensFor(User user) {
         return new AuthResponse(
                 jwtService.createAccessToken(user),
@@ -131,6 +178,8 @@ public class AuthService {
                 emailVerified = companyOpt.get().isEmailVerified();
                 companyId = companyOpt.get().getId();
             }
+        } else if (user.getRole() == UserRole.STUDENT) {
+            emailVerified = emailVerificationService.isUserEmailVerified(user);
         }
         return UserSummary.from(user, emailVerified, companyId);
     }

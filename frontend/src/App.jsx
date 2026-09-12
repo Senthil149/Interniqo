@@ -17,7 +17,8 @@ import MyApplicationsPage from './pages/student/MyApplicationsPage.jsx'
 import VerifyEmailPage from './pages/VerifyEmailPage.jsx'
 import VerifyCredentialPage from './pages/VerifyCredentialPage.jsx'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx'
-import CompanyVerificationBanner from './components/CompanyVerificationBanner.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 
 const NAV_LINK =
   'font-medium text-slate-600 hover:text-slate-900 transition-colors'
@@ -155,13 +156,14 @@ function AppRoutes() {
   return (
     <>
       <NavBar />
-      <CompanyVerificationBanner />
       <main className="mx-auto max-w-7xl px-6 py-10">
         <Routes>
           {/* Public */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/verify-credential" element={<VerifyCredentialPage />} />
           <Route path="/verify-credential/:credentialId" element={<VerifyCredentialPage />} />

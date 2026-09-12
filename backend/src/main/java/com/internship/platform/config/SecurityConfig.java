@@ -60,7 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
-                                "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                                "/api/auth/verify-email", "/api/auth/verify-code", "/api/auth/resend-code",
+                                "/api/auth/resend-verification",
+                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         // Public read-only internship detail — no auth required
                         .requestMatchers(HttpMethod.GET, "/api/internships/**").permitAll()
                         .requestMatchers("/api/student/**").hasRole("STUDENT")

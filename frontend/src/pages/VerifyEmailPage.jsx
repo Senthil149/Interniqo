@@ -1,274 +1,260 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { verifyEmailToken, resendVerificationEmail } from '../api/auth.js'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { verifyEmailToken, verifyCode, resendCode } from '../api/auth.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 
 /**
- * Landing page for email verification link clicks.
- * Handles `GET /verify-email?token=...`.
+ * Verification page for 6-digit code verification.
+ * Also gracefully supports legacy token URL clicks (`GET /verify-email?token=...`).
  *
  * Design Rule #4 compliance:
- * The landing page makes clearly visible that verification confirms inbox control only,
- * not legal company identity or business credentials.
+ * Clearly communicates that verification confirms inbox control only,
+ * not legal company identity or academic status.
  */
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
-  const { user, isAuthenticated, refreshUser } = useAuth()
+  const tokenParam = searchParams.get('token')
+  const emailParam = searchParams.get('email')
 
-  const [loading, setLoading] = useState(Boolean(token))
-  const [result, setResult] = useState(null) // { verified: boolean, message: string, email?: string, companyName?: string, notice?: string }
-  const [error, setError] = useState(!token ? 'No verification token was provided in the URL.' : null)
+  const { user, verifyCode: authVerifyCode } = useAuth()
+  const navigate = useNavigate()
 
-  // Resend form state for expired / failed cases
-  const [resendEmail, setResendEmail] = useState(user?.email || '')
-  const [isResending, setIsResending] = useState(false)
+  // Form state
+  const [email, setEmail] = useState(emailParam || user?.email || '')
+  const [code, setCode] = useState(tokenParam && tokenParam.length === 6 && /^\d{6}$/.test(tokenParam) ? tokenParam : '')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
+  const [successNotice, setSuccessNotice] = useState(null)
+
+  // Resend state & cooldown
+  const [resendCooldown, setResendCooldown] = useState(0)
   const [resendMessage, setResendMessage] = useState(null)
 
+  // Legacy link-based verification support
   useEffect(() => {
-    if (!token) return
+    if (tokenParam && (!/^\d{6}$/.test(tokenParam))) {
+      // Long cryptographic token -> handle via verifyEmailToken
+      setSubmitting(true)
+      verifyEmailToken(tokenParam)
+        .then(({ data }) => {
+          setSuccess(true)
+          setSuccessNotice(data?.notice || 'Email verified successfully.')
+          if (data?.email) setEmail(data.email)
+        })
+        .catch((err) => {
+          setError(
+            err.response?.data?.message ||
+            'This verification token is invalid or has expired. Please enter your email and request a fresh code.'
+          )
+        })
+        .finally(() => {
+          setSubmitting(false)
+        })
+    }
+  }, [tokenParam])
 
-    let isMounted = true
-    setLoading(true)
+  // Countdown timer for resend rate-limiting
+  useEffect(() => {
+    let timer = null
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [resendCooldown])
+
+  async function handleVerify(e) {
+    e.preventDefault()
+    const trimmedEmail = email.trim().toLowerCase()
+    const trimmedCode = code.trim()
+
+    if (!trimmedEmail) {
+      setError('Please enter your account email address.')
+      return
+    }
+
+    if (trimmedCode.length !== 6) {
+      setError('Please enter the 6-digit verification code.')
+      return
+    }
+
+    setSubmitting(true)
+    setError(null)
+    setResendMessage(null)
+
+    try {
+      if (authVerifyCode) {
+        await authVerifyCode({ email: trimmedEmail, code: trimmedCode })
+      } else {
+        await verifyCode({ email: trimmedEmail, code: trimmedCode })
+      }
+      setSuccess(true)
+      setSuccessNotice('Email verified successfully! You are now authenticated.')
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true })
+      }, 1500)
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        'Invalid or expired verification code. Please check your code or request a new one.'
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleResendCode() {
+    const trimmedEmail = email.trim().toLowerCase()
+    if (!trimmedEmail) {
+      setError('Please enter your account email to receive a new code.')
+      return
+    }
+
+    if (resendCooldown > 0) return
+
+    setResendMessage(null)
     setError(null)
 
-    verifyEmailToken(token)
-      .then(async ({ data }) => {
-        if (!isMounted) return
-        setResult(data)
-        setLoading(false)
-        if (isAuthenticated && refreshUser) {
-          try {
-            await refreshUser()
-          } catch (e) {
-            console.error('User refresh after verification failed:', e)
-          }
-        }
-      })
-      .catch((err) => {
-        if (!isMounted) return
-        const msg =
-          err.response?.data?.message ||
-          'This verification token is invalid or has expired. Please request a new link.'
-        setError(msg)
-        setLoading(false)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [token, isAuthenticated])
-
-  async function handleResend(e) {
-    e.preventDefault()
-    if (!resendEmail.trim()) return
-
-    setIsResending(true)
-    setResendMessage(null)
     try {
-      const { data } = await resendVerificationEmail(resendEmail.trim())
+      const { data } = await resendCode({ email: trimmedEmail })
       setResendMessage({
         type: 'success',
-        text: data?.message || 'Verification link sent! Check your inbox or terminal console.',
+        text: data?.message || 'A fresh 6-digit verification code has been sent to your email.',
       })
+      setResendCooldown(60)
     } catch (err) {
-      const errorMsg =
-        err.response?.data?.message || 'Unable to send verification link. Please check the email address.'
-      setResendMessage({ type: 'error', text: errorMsg })
-    } finally {
-      setIsResending(false)
+      setResendMessage({
+        type: 'error',
+        text: err.response?.data?.message || err.response?.data?.error || 'Unable to resend code.',
+      })
     }
   }
 
   return (
-    <div className="mx-auto max-w-xl py-12">
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        {/* State 1: Verifying in progress */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="relative mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50">
-              <svg
-                className="h-8 w-8 animate-spin text-indigo-600"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                />
-              </svg>
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">Verifying Email...</h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Please wait while we validate your verification token.
-            </p>
+    <div className="mx-auto max-w-md py-8">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+            <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
           </div>
-        )}
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Email Verification</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Enter your email and the 6-digit code sent to your inbox.
+          </p>
+        </div>
 
-        {/* State 2: Verification Success */}
-        {!loading && result?.verified && (
-          <div className="flex flex-col items-center py-6 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <svg className="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.5"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
+        {success ? (
+          <div className="space-y-4 text-center">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 space-y-1">
+              <p className="font-semibold text-emerald-900">Account Verified!</p>
+              <p>{successNotice || 'Your email address has been verified successfully.'}</p>
             </div>
-
-            <h1 className="text-2xl font-bold text-slate-900">Email Verified Successfully</h1>
-            <p className="mt-2 text-sm text-slate-600 max-w-md">
-              Control of <strong className="font-semibold text-slate-900">{result.email}</strong> has been
-              confirmed for <span className="font-semibold">{result.companyName || 'your company'}</span>.
-            </p>
-
-            {/* Design Rule #4 Notice Box */}
-            <div className="mt-6 w-full rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 text-left">
-              <div className="flex items-start gap-2.5">
-                <svg
-                  className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div className="space-y-1 text-xs text-indigo-950">
-                  <span className="font-semibold">Platform Policy (Design Rule #4)</span>
-                  <p className="leading-relaxed text-indigo-900/90">
-                    This verification confirms <strong>control of the domain inbox only</strong>. In
-                    accordance with platform standards, email confirmation does not serve as legal proof of
-                    business registration, corporate identity, or official accreditation.
-                  </p>
-                </div>
+            <Link
+              to="/dashboard"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700"
+            >
+              Go to Dashboard →
+            </Link>
+          </div>
+        ) : (
+          <form className="space-y-4" onSubmit={handleVerify}>
+            {error ? (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
+                {error}
               </div>
-            </div>
+            ) : null}
 
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    to="/company/internships"
-                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition"
-                  >
-                    View My Listings
-                  </Link>
-                  <Link
-                    to="/company/internships/new"
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    Post Internship
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition"
-                >
-                  Sign in to Account
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* State 3: Error / Expired / Invalid */}
-        {!loading && !result?.verified && (
-          <div className="flex flex-col items-center py-6 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-
-            <h1 className="text-2xl font-bold text-slate-900">Verification Link Issue</h1>
-            <p className="mt-2 text-sm text-rose-700 max-w-md">{error}</p>
-
-            {/* Design Rule #4 Reminder */}
-            <p className="mt-3 text-xs text-slate-500 italic max-w-md">
-              Note (Design Rule #4): Email links expire in 24 hours to safeguard inbox ownership. Verification
-              confirms inbox control only, not legal business identity.
-            </p>
-
-            {/* Resend verification box */}
-            <div className="mt-8 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-5 text-left">
-              <h2 className="text-sm font-semibold text-slate-900">Need a fresh verification link?</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Enter your company email below and we will send a new link valid for 24 hours.
-              </p>
-
-              <form onSubmit={handleResend} className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <input
-                  type="email"
-                  required
-                  placeholder="company@example.com"
-                  value={resendEmail}
-                  onChange={(e) => setResendEmail(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-xs focus:border-indigo-500 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                />
-                <button
-                  type="submit"
-                  disabled={isResending}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50 transition shrink-0"
-                >
-                  {isResending ? 'Sending...' : 'Resend Link'}
-                </button>
-              </form>
-
-              {resendMessage && (
-                <div
-                  className={`mt-3 rounded-md p-2.5 text-xs font-medium ${resendMessage.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-rose-50 text-rose-800 border border-rose-200'
-                    }`}
-                >
-                  {resendMessage.text}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Link
-                to="/"
-                className="text-xs font-medium text-slate-600 hover:text-slate-900 transition"
+            {resendMessage ? (
+              <div
+                className={`rounded-xl border p-3 text-xs ${
+                  resendMessage.type === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-rose-200 bg-rose-50 text-rose-700'
+                }`}
               >
-                Back to Home
-              </Link>
-              {isAuthenticated && (
-                <>
-                  <span className="text-xs text-slate-300">•</span>
-                  <Link
-                    to="/dashboard"
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition"
-                  >
-                    Go to Dashboard
-                  </Link>
-                </>
-              )}
+                {resendMessage.text}
+              </div>
+            ) : null}
+
+            <label className="block text-sm font-medium text-slate-700">
+              Account Email
+              <input
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+              />
+            </label>
+
+            <div>
+              <label htmlFor="code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                6-Digit Verification Code
+              </label>
+              <input
+                id="code-input"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                autoFocus
+                value={code}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  setCode(val)
+                  if (error) setError(null)
+                }}
+                placeholder="••••••"
+                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition shadow-inner placeholder:text-slate-300"
+              />
+              <p className="mt-1 text-center text-[11px] text-slate-400">
+                Code expires in 10 minutes.
+              </p>
             </div>
-          </div>
+
+            <button
+              type="submit"
+              disabled={submitting || code.trim().length !== 6 || !email.trim()}
+              className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Verifying Code…' : 'Verify & Activate'}
+            </button>
+
+            <div className="pt-2 border-t border-slate-100 text-center">
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resendCooldown > 0 || !email.trim()}
+                className={`text-xs font-semibold transition ${
+                  resendCooldown > 0 || !email.trim()
+                    ? 'text-slate-400 cursor-not-allowed'
+                    : 'text-indigo-600 hover:text-indigo-700 underline'
+                }`}
+              >
+                {resendCooldown > 0
+                  ? `Resend code in ${resendCooldown}s`
+                  : 'Resend 6-digit code'}
+              </button>
+            </div>
+
+            {/* Design Rule #4 Disclaimer */}
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-500 leading-relaxed text-center">
+              <span className="font-semibold text-slate-700">Notice (Design Rule #4):</span> Email verification confirms control of this email address only. It does not certify legal company incorporation or academic standing.
+            </div>
+          </form>
         )}
       </div>
     </div>
