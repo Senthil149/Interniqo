@@ -2,7 +2,6 @@ import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx'
 import ProtectedRoute from './auth/ProtectedRoute.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
-import HealthPage from './pages/HealthPage.jsx'
 import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
@@ -103,18 +102,12 @@ function NavBar() {
           </NavLink>
         )}
 
-        {/* Public Verify Credential & Health */}
+        {/* Public Verify Credential */}
         <NavLink
           to="/verify-credential"
           className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
         >
           Verify Credential
-        </NavLink>
-        <NavLink
-          to="/health"
-          className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
-        >
-          Health
         </NavLink>
 
         {/* Auth section — pushed to the right */}
@@ -167,7 +160,6 @@ function AppRoutes() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/health" element={<HealthPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
