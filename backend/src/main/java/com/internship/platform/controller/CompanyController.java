@@ -3,6 +3,9 @@ package com.internship.platform.controller;
 import com.internship.platform.dto.InternshipRequest;
 import com.internship.platform.dto.InternshipResponse;
 import com.internship.platform.service.InternshipService;
+import com.internship.platform.dto.CompanyProfileRequest;
+import com.internship.platform.dto.CompanyProfileResponse;
+import com.internship.platform.service.CompanyService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -24,14 +27,30 @@ import java.util.Map;
 public class CompanyController {
 
     private final InternshipService internshipService;
+    private final CompanyService companyService;
 
-    public CompanyController(InternshipService internshipService) {
+    public CompanyController(InternshipService internshipService, CompanyService companyService) {
         this.internshipService = internshipService;
+        this.companyService = companyService;
     }
 
     @GetMapping("/me")
     public Map<String, String> me(Authentication authentication) {
         return Map.of("role", "COMPANY", "email", authentication.getName());
+    }
+
+    // ── Profile Management ───────────────────────────────────────────────────
+
+    @GetMapping("/profile")
+    public CompanyProfileResponse getProfile(Authentication authentication) {
+        return companyService.getProfile(authentication.getName());
+    }
+
+    @PutMapping("/profile")
+    public CompanyProfileResponse updateProfile(
+            @RequestBody CompanyProfileRequest request,
+            Authentication authentication) {
+        return companyService.updateProfile(authentication.getName(), request);
     }
 
     // ── Internship CRUD ──────────────────────────────────────────────────────

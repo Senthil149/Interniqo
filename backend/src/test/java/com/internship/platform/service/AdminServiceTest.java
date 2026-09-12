@@ -241,4 +241,60 @@ class AdminServiceTest {
         assertEquals(2, item.getRiskReasons().size());
         assertEquals("Registration fee requested", item.getRiskReasons().get(0));
     }
+
+    @Test
+    void testGetCompaniesWithDomainFilteringAndSorting() {
+        Company c1 = new Company();
+        c1.setId(1L);
+        c1.setCompanyName("Alpha Corp");
+        c1.setEmail("contact@alphacorp.com");
+        c1.setEmailVerified(true);
+        c1.setPersonalEmail(false);
+        c1.setWebsiteDomainMatch(true);
+        c1.setWebsite("https://alphacorp.com");
+
+        Company c2 = new Company();
+        c2.setId(2L);
+        c2.setCompanyName("Beta Small Shop");
+        c2.setEmail("founder@gmail.com");
+        c2.setEmailVerified(true);
+        c2.setPersonalEmail(true);
+        c2.setWebsiteDomainMatch(false);
+        c2.setWebsite("https://betashop.com");
+
+        Company c3 = new Company();
+        c3.setId(3L);
+        c3.setCompanyName("Gamma Tech");
+        c3.setEmail("hr@gamma.io");
+        c3.setEmailVerified(false);
+        c3.setPersonalEmail(false);
+        c3.setWebsiteDomainMatch(false);
+
+        when(companyRepository.findAllByOrderByIdDesc()).thenReturn(List.of(c3, c2, c1));
+        when(internshipRepository.findByCompanyOrderByIdDesc(any(Company.class))).thenReturn(List.of());
+
+        // 1. All companies
+        List<AdminCompanyResponse> all = adminService.getCompanies();
+        assertEquals(3, all.size());
+        assertEquals("alphacorp.com", all.stream().filter(c -> c.getId().equals(1L)).findFirst().get().getEmailDomain());
+        assertEquals("gmail.com", all.stream().filter(c -> c.getId().equals(2L)).findFirst().get().getEmailDomain());
+
+        // 2. Filter personal email
+        List<AdminCompanyResponse> personalOnly = adminService.getCompanies(null, true, null, null, null, null);
+        assertEquals(1, personalOnly.size());
+        assertEquals("Beta Small Shop", personalOnly.get(0).getCompanyName());
+
+        // 3. Filter website match
+        List<AdminCompanyResponse> websiteMatchOnly = adminService.getCompanies(null, null, true, null, null, null);
+        assertEquals(1, websiteMatchOnly.size());
+        assertEquals("Alpha Corp", websiteMatchOnly.get(0).getCompanyName());
+
+        // 4. Sort by name asc
+        List<AdminCompanyResponse> sortedByName = adminService.getCompanies(null, null, null, null, "name", "asc");
+        assertEquals(3, sortedByName.size());
+        assertEquals("Alpha Corp", sortedByName.get(0).getCompanyName());
+        assertEquals("Beta Small Shop", sortedByName.get(1).getCompanyName());
+        assertEquals("Gamma Tech", sortedByName.get(2).getCompanyName());
+    }
 }
+

@@ -14,6 +14,7 @@ import {
   getAdminBlockchainRecords,
 } from '../../api/admin.js'
 import RiskBadge from '../../components/RiskBadge.jsx'
+import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -30,6 +31,9 @@ export default function AdminDashboardPage() {
   // Companies state
   const [companies, setCompanies] = useState([])
   const [companySearch, setCompanySearch] = useState('')
+  const [companyDomainFilter, setCompanyDomainFilter] = useState('ALL') // 'ALL' | 'ORG' | 'PERSONAL' | 'UNVERIFIED'
+  const [companyWebsiteFilter, setCompanyWebsiteFilter] = useState('ALL') // 'ALL' | 'MATCHED' | 'NO_MATCH'
+  const [companySort, setCompanySort] = useState('newest') // 'newest' | 'name' | 'postings' | 'domain'
   const [loadingCompanies, setLoadingCompanies] = useState(false)
   const [togglingCompanyId, setTogglingCompanyId] = useState(null)
 
@@ -213,11 +217,43 @@ export default function AdminDashboardPage() {
     return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
   })
 
-  const filteredCompanies = companies.filter((c) => {
-    if (!companySearch) return true
-    const q = companySearch.toLowerCase()
-    return c.companyName?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
-  })
+  const filteredCompanies = companies
+    .filter((c) => {
+      if (companyDomainFilter === 'ORG') {
+        if (!c.emailVerified || c.personalEmail) return false
+      } else if (companyDomainFilter === 'PERSONAL') {
+        if (!c.personalEmail) return false
+      } else if (companyDomainFilter === 'UNVERIFIED') {
+        if (c.emailVerified) return false
+      }
+
+      if (companyWebsiteFilter === 'MATCHED') {
+        if (!c.websiteDomainMatch) return false
+      } else if (companyWebsiteFilter === 'NO_MATCH') {
+        if (c.websiteDomainMatch) return false
+      }
+
+      if (!companySearch) return true
+      const q = companySearch.toLowerCase()
+      return (
+        c.companyName?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.emailDomain?.toLowerCase().includes(q) ||
+        c.country?.toLowerCase().includes(q)
+      )
+    })
+    .sort((a, b) => {
+      if (companySort === 'name') {
+        return (a.companyName || '').localeCompare(b.companyName || '')
+      }
+      if (companySort === 'postings') {
+        return (b.internshipCount || 0) - (a.internshipCount || 0)
+      }
+      if (companySort === 'domain') {
+        return (a.emailDomain || '').localeCompare(b.emailDomain || '')
+      }
+      return (b.id || 0) - (a.id || 0) // default newest
+    })
 
   const filteredInternships = internships.filter((i) => {
     if (!internshipSearch) return true
@@ -577,17 +613,64 @@ export default function AdminDashboardPage() {
       {/* TAB 3: COMPANIES */}
       {activeTab === 'companies' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-xs text-slate-500">
-              Manage registered company accounts and override email verification status.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-slate-500">
+                Manage registered company accounts, monitor domain signals, and override verification status.
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Design Rule #4: Personal email signals are informational heuristics, not proof of illegitimacy.
+              </p>
+            </div>
             <input
               type="text"
-              placeholder="Search companies..."
+              placeholder="Search by name, email, domain..."
               value={companySearch}
               onChange={(e) => setCompanySearch(e.target.value)}
-              className="w-64 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
+              className="w-full sm:w-72 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
             />
+          </div>
+
+          {/* Filters & Sorting Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-slate-600">Domain Type:</span>
+              <select
+                value={companyDomainFilter}
+                onChange={(e) => setCompanyDomainFilter(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+              >
+                <option value="ALL">All Domains ({companies.length})</option>
+                <option value="ORG">Verified Org Domains</option>
+                <option value="PERSONAL">Personal Email Providers (Review Recommended)</option>
+                <option value="UNVERIFIED">Unverified Accounts</option>
+              </select>
+
+              <span className="font-semibold text-slate-600 ml-2">Website Match:</span>
+              <select
+                value={companyWebsiteFilter}
+                onChange={(e) => setCompanyWebsiteFilter(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+              >
+                <option value="ALL">All Website States</option>
+                <option value="MATCHED">🌐 Matches Website Domain</option>
+                <option value="NO_MATCH">No Match / Not Stated</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-600">Sort By:</span>
+              <select
+                value={companySort}
+                onChange={(e) => setCompanySort(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+              >
+                <option value="newest">Newest First</option>
+                <option value="name">Company Name (A-Z)</option>
+                <option value="postings">Most Postings</option>
+                <option value="domain">Email Domain (A-Z)</option>
+              </select>
+            </div>
           </div>
 
           {loadingCompanies ? (
@@ -601,45 +684,51 @@ export default function AdminDashboardPage() {
                     <th className="px-4 py-3">Company</th>
                     <th className="px-4 py-3">Location & Web</th>
                     <th className="px-4 py-3">Postings</th>
-                    <th className="px-4 py-3">Email Verification</th>
+                    <th className="px-4 py-3">Email & Domain Signals</th>
                     <th className="px-4 py-3 text-right">Admin Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredCompanies.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/70 transition">
-                      <td className="px-4 py-3 font-mono text-slate-400">#{c.id}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-bold text-slate-900">{c.companyName}</p>
-                        <p className="text-slate-500">{c.email}</p>
+                  {filteredCompanies.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                        No companies match the selected filters.
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        <p>{c.country || 'N/A'}</p>
-                        {c.website && (
-                          <a
-                            href={c.website.startsWith('http') ? c.website : `https://${c.website}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-indigo-600 hover:underline text-[11px]"
-                          >
-                            {c.website}
-                          </a>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-700">
-                        {c.internshipCount} postings
-                      </td>
-                      <td className="px-4 py-3">
-                        {c.emailVerified ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                            ✓ Verified Domain
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
-                            Unverified
-                          </span>
-                        )}
-                      </td>
+                    </tr>
+                  ) : (
+                    filteredCompanies.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50/70 transition">
+                        <td className="px-4 py-3 font-mono text-slate-400">#{c.id}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-bold text-slate-900">{c.companyName}</p>
+                          <p className="text-slate-500">{c.email}</p>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          <p>{c.country || 'N/A'}</p>
+                          {c.website && (
+                            <a
+                              href={c.website.startsWith('http') ? c.website : `https://${c.website}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-indigo-600 hover:underline text-[11px]"
+                            >
+                              {c.website}
+                            </a>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-slate-700">
+                          {c.internshipCount} postings
+                        </td>
+                        <td className="px-4 py-3">
+                          <CompanyVerificationBadge
+                            verified={c.emailVerified}
+                            personalEmail={c.personalEmail}
+                            websiteDomainMatch={c.websiteDomainMatch}
+                            website={c.website}
+                            emailDomain={c.emailDomain}
+                            size="sm"
+                          />
+                        </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
@@ -659,7 +748,7 @@ export default function AdminDashboardPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>

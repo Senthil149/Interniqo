@@ -13,6 +13,7 @@ function RegisterPage() {
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('STUDENT')
   const [companyName, setCompanyName] = useState('')
+  const [website, setWebsite] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -52,6 +53,7 @@ function RegisterPage() {
         password,
         role,
         companyName: role === 'COMPANY' ? companyName.trim() : undefined,
+        website: role === 'COMPANY' && website.trim() ? website.trim() : undefined,
       })
       // Transition immediately to in-flow 6-digit verification code screen
       setStep('VERIFY')
@@ -313,16 +315,31 @@ function RegisterPage() {
         </label>
 
         {role === 'COMPANY' ? (
-          <label className="block text-sm font-medium text-slate-700">
-            Company Name
-            <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-              placeholder="e.g. Quantum Leap Technologies"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              required
-            />
-          </label>
+          <>
+            <label className="block text-sm font-medium text-slate-700">
+              Company Name
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                placeholder="e.g. Quantum Leap Technologies"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="block text-sm font-medium text-slate-700">
+              Company Website <span className="text-xs text-slate-400 font-normal">(Optional)</span>
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                placeholder="e.g. https://quantumleap.tech"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+              <span className="mt-1 block text-xs text-slate-500">
+                If provided, we verify whether your work email domain matches your company website.
+              </span>
+            </label>
+          </>
         ) : null}
 
         <button

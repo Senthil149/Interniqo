@@ -27,6 +27,10 @@ public class RecommendationItemResponse {
     private Integer riskScore;
     private String riskLevel;
     private java.util.List<String> riskReasons;
+    private Boolean companyEmailVerified;
+    private Boolean companyPersonalEmail;
+    private Boolean companyWebsiteDomainMatch;
+    private String companyWebsite;
 
     public static RecommendationItemResponse from(Recommendation rec) {
         return from(rec, null);
@@ -44,6 +48,10 @@ public class RecommendationItemResponse {
             resp.setTitle(in.getTitle());
             if (in.getCompany() != null) {
                 resp.setCompanyName(in.getCompany().getCompanyName());
+                resp.setCompanyEmailVerified(in.getCompany().isEmailVerified());
+                resp.setCompanyPersonalEmail(in.getCompany().isPersonalEmail());
+                resp.setCompanyWebsiteDomainMatch(in.getCompany().isWebsiteDomainMatch());
+                resp.setCompanyWebsite(in.getCompany().getWebsite());
             }
             resp.setCountry(in.getCountry());
             resp.setCity(in.getCity());
@@ -220,5 +228,37 @@ public class RecommendationItemResponse {
 
     public void setRiskReasons(java.util.List<String> riskReasons) {
         this.riskReasons = riskReasons;
+    }
+
+    public Boolean getCompanyEmailVerified() {
+        return companyEmailVerified;
+    }
+
+    public void setCompanyEmailVerified(Boolean companyEmailVerified) {
+        this.companyEmailVerified = companyEmailVerified;
+    }
+
+    public Boolean getCompanyPersonalEmail() {
+        return companyPersonalEmail;
+    }
+
+    public void setCompanyPersonalEmail(Boolean companyPersonalEmail) {
+        this.companyPersonalEmail = companyPersonalEmail;
+    }
+
+    public Boolean getCompanyWebsiteDomainMatch() {
+        return companyWebsiteDomainMatch;
+    }
+
+    public void setCompanyWebsiteDomainMatch(Boolean companyWebsiteDomainMatch) {
+        this.companyWebsiteDomainMatch = companyWebsiteDomainMatch;
+    }
+
+    public String getCompanyWebsite() {
+        return companyWebsite;
+    }
+
+    public void setCompanyWebsite(String companyWebsite) {
+        this.companyWebsite = companyWebsite;
     }
 }

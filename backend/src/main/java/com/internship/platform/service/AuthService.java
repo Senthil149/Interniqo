@@ -37,6 +37,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailVerificationService emailVerificationService;
+    private final DomainQualityService domainQualityService;
 
     public AuthService(
             UserRepository userRepository,
@@ -46,6 +47,20 @@ public class AuthService {
             AuthenticationManager authenticationManager,
             JwtService jwtService,
             EmailVerificationService emailVerificationService) {
+        this(userRepository, studentRepository, companyRepository, passwordEncoder,
+                authenticationManager, jwtService, emailVerificationService, new DomainQualityService());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            CompanyRepository companyRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            EmailVerificationService emailVerificationService,
+            DomainQualityService domainQualityService) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.companyRepository = companyRepository;
@@ -53,6 +68,7 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.emailVerificationService = emailVerificationService;
+        this.domainQualityService = domainQualityService != null ? domainQualityService : new DomainQualityService();
     }
 
     @Transactional
@@ -89,6 +105,17 @@ public class AuthService {
             company.setCompanyName(companyName);
             company.setEmail(email);
             company.setEmailVerified(false);
+
+            if (request.getWebsite() != null && !request.getWebsite().isBlank()) {
+                company.setWebsite(request.getWebsite().trim());
+            }
+
+            // Domain quality signals (Design Rule #4: personal email is an informational heuristic, not an outright block)
+            boolean isPersonal = domainQualityService.isPersonalEmail(email);
+            boolean matchesWebsite = domainQualityService.matchesWebsiteDomain(email, company.getWebsite());
+            company.setPersonalEmail(isPersonal);
+            company.setWebsiteDomainMatch(matchesWebsite);
+
             company = companyRepository.save(company);
 
             // Generate 6-digit code, 10m expiry, and send verification email (or log to console)

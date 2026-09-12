@@ -40,6 +40,12 @@ public class Company {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified;
 
+    @Column(name = "personal_email", nullable = false)
+    private boolean personalEmail;
+
+    @Column(name = "website_domain_match", nullable = false)
+    private boolean websiteDomainMatch;
+
     public Long getId() {
         return id;
     }
@@ -102,5 +108,21 @@ public class Company {
 
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    public boolean isPersonalEmail() {
+        return personalEmail;
+    }
+
+    public void setPersonalEmail(boolean personalEmail) {
+        this.personalEmail = personalEmail;
+    }
+
+    public boolean isWebsiteDomainMatch() {
+        return websiteDomainMatch;
+    }
+
+    public void setWebsiteDomainMatch(boolean websiteDomainMatch) {
+        this.websiteDomainMatch = websiteDomainMatch;
     }
 }

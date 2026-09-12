@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { searchInternships } from '../../api/internships.js'
 import RiskBadge from '../../components/RiskBadge.jsx'
+import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
 
 const INPUT =
   'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400'
@@ -47,7 +48,16 @@ function InternshipCard({ internship }) {
           </span>
         </div>
 
-        <p className="mb-3 text-sm font-medium text-slate-500">{internship.companyName}</p>
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <span className="text-sm font-medium text-slate-700">{internship.companyName}</span>
+          <CompanyVerificationBadge
+            verified={internship.companyEmailVerified}
+            personalEmail={internship.companyPersonalEmail}
+            websiteDomainMatch={internship.companyWebsiteDomainMatch}
+            website={internship.companyWebsite}
+            size="sm"
+          />
+        </div>
 
         <div className="space-y-1 text-sm text-slate-500">
           <p>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { generateRecommendations, getRecommendations } from '../../api/recommendations.js'
 import RiskBadge from '../../components/RiskBadge.jsx'
+import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
 
 const INPUT =
   'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400'
@@ -82,7 +83,16 @@ function RecommendationCard({ rec }) {
             >
               {rec.title}
             </Link>
-            <p className="text-sm font-medium text-slate-500">{rec.companyName}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm font-medium text-slate-700">{rec.companyName}</span>
+              <CompanyVerificationBadge
+                verified={rec.companyEmailVerified}
+                personalEmail={rec.companyPersonalEmail}
+                websiteDomainMatch={rec.companyWebsiteDomainMatch}
+                website={rec.companyWebsite}
+                size="sm"
+              />
+            </div>
           </div>
         </div>
 

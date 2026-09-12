@@ -53,6 +53,7 @@ public class AdminService {
     private final EmailVerificationRepository emailVerificationRepository;
     private final BlockchainRecordRepository blockchainRecordRepository;
     private final CredentialRepository credentialRepository;
+    private final DomainQualityService domainQualityService;
 
     public AdminService(
             UserRepository userRepository,
@@ -64,6 +65,23 @@ public class AdminService {
             EmailVerificationRepository emailVerificationRepository,
             BlockchainRecordRepository blockchainRecordRepository,
             CredentialRepository credentialRepository) {
+        this(userRepository, studentRepository, companyRepository, internshipRepository,
+                applicationRepository, riskAssessmentRepository, emailVerificationRepository,
+                blockchainRecordRepository, credentialRepository, new DomainQualityService());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            CompanyRepository companyRepository,
+            InternshipRepository internshipRepository,
+            ApplicationRepository applicationRepository,
+            RiskAssessmentRepository riskAssessmentRepository,
+            EmailVerificationRepository emailVerificationRepository,
+            BlockchainRecordRepository blockchainRecordRepository,
+            CredentialRepository credentialRepository,
+            DomainQualityService domainQualityService) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.companyRepository = companyRepository;
@@ -73,6 +91,7 @@ public class AdminService {
         this.emailVerificationRepository = emailVerificationRepository;
         this.blockchainRecordRepository = blockchainRecordRepository;
         this.credentialRepository = credentialRepository;
+        this.domainQualityService = domainQualityService != null ? domainQualityService : new DomainQualityService();
     }
 
     /**
@@ -156,12 +175,29 @@ public class AdminService {
      */
     @Transactional(readOnly = true)
     public List<AdminCompanyResponse> getCompanies() {
-        return companyRepository.findAllByOrderByIdDesc().stream().map(comp -> {
+        return getCompanies(null, null, null, null, null, null);
+    }
+
+    /**
+     * List all companies with optional filtering and sorting on domain quality and verification signals.
+     */
+    @Transactional(readOnly = true)
+    public List<AdminCompanyResponse> getCompanies(
+            Boolean emailVerified,
+            Boolean personalEmail,
+            Boolean websiteMatch,
+            String search,
+            String sortBy,
+            String sortDir) {
+        java.util.stream.Stream<AdminCompanyResponse> stream = companyRepository.findAllByOrderByIdDesc().stream().map(comp -> {
             AdminCompanyResponse resp = new AdminCompanyResponse();
             resp.setId(comp.getId());
             resp.setCompanyName(comp.getCompanyName());
             resp.setEmail(comp.getEmail());
             resp.setEmailVerified(comp.isEmailVerified());
+            resp.setPersonalEmail(comp.isPersonalEmail());
+            resp.setWebsiteDomainMatch(comp.isWebsiteDomainMatch());
+            resp.setEmailDomain(domainQualityService.extractDomainFromEmail(comp.getEmail()));
             resp.setWebsite(comp.getWebsite());
             resp.setCountry(comp.getCountry());
             resp.setDescription(comp.getDescription());
@@ -171,7 +207,51 @@ public class AdminService {
             }
             resp.setInternshipCount(internshipRepository.findByCompanyOrderByIdDesc(comp).size());
             return resp;
-        }).toList();
+        });
+
+        // Filtering
+        if (emailVerified != null) {
+            stream = stream.filter(c -> c.isEmailVerified() == emailVerified);
+        }
+        if (personalEmail != null) {
+            stream = stream.filter(c -> c.isPersonalEmail() == personalEmail);
+        }
+        if (websiteMatch != null) {
+            stream = stream.filter(c -> c.isWebsiteDomainMatch() == websiteMatch);
+        }
+        if (search != null && !search.isBlank()) {
+            String q = search.trim().toLowerCase();
+            stream = stream.filter(c ->
+                    (c.getCompanyName() != null && c.getCompanyName().toLowerCase().contains(q)) ||
+                    (c.getEmail() != null && c.getEmail().toLowerCase().contains(q)) ||
+                    (c.getEmailDomain() != null && c.getEmailDomain().toLowerCase().contains(q)) ||
+                    (c.getCountry() != null && c.getCountry().toLowerCase().contains(q))
+            );
+        }
+
+        // Sorting
+        boolean desc = "desc".equalsIgnoreCase(sortDir);
+        java.util.Comparator<AdminCompanyResponse> comparator;
+        if ("name".equalsIgnoreCase(sortBy)) {
+            comparator = java.util.Comparator.comparing(c -> c.getCompanyName() != null ? c.getCompanyName().toLowerCase() : "", java.util.Comparator.naturalOrder());
+        } else if ("postings".equalsIgnoreCase(sortBy)) {
+            comparator = java.util.Comparator.comparingLong(AdminCompanyResponse::getInternshipCount);
+        } else if ("domain".equalsIgnoreCase(sortBy)) {
+            comparator = java.util.Comparator.comparing(c -> c.getEmailDomain() != null ? c.getEmailDomain().toLowerCase() : "", java.util.Comparator.naturalOrder());
+        } else if ("personalEmail".equalsIgnoreCase(sortBy)) {
+            comparator = java.util.Comparator.comparing(AdminCompanyResponse::isPersonalEmail);
+        } else if ("websiteMatch".equalsIgnoreCase(sortBy)) {
+            comparator = java.util.Comparator.comparing(AdminCompanyResponse::isWebsiteDomainMatch);
+        } else {
+            comparator = java.util.Comparator.comparing(AdminCompanyResponse::getId);
+            desc = !"asc".equalsIgnoreCase(sortDir); // default id sorting is desc
+        }
+
+        if (desc) {
+            comparator = comparator.reversed();
+        }
+
+        return stream.sorted(comparator).toList();
     }
 
     /**
@@ -193,6 +273,9 @@ public class AdminService {
         resp.setCompanyName(company.getCompanyName());
         resp.setEmail(company.getEmail());
         resp.setEmailVerified(company.isEmailVerified());
+        resp.setPersonalEmail(company.isPersonalEmail());
+        resp.setWebsiteDomainMatch(company.isWebsiteDomainMatch());
+        resp.setEmailDomain(domainQualityService.extractDomainFromEmail(company.getEmail()));
         resp.setWebsite(company.getWebsite());
         resp.setCountry(company.getCountry());
         resp.setDescription(company.getDescription());

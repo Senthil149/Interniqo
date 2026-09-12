@@ -1,6 +1,6 @@
 package com.internship.platform.dto;
 
-public class AdminCompanyResponse {
+public class CompanyProfileResponse {
 
     private Long id;
     private String companyName;
@@ -12,11 +12,14 @@ public class AdminCompanyResponse {
     private String website;
     private String country;
     private String description;
-    private Long userId;
-    private String userName;
-    private long internshipCount;
+    private String notice;
 
-    public AdminCompanyResponse() {
+    public static final String DESIGN_RULE_4_NOTICE =
+            "Notice (Design Rule #4): Domain quality checks and email verification confirm inbox and domain control only. " +
+            "They do not certify legal business incorporation, government registration, or legitimacy.";
+
+    public CompanyProfileResponse() {
+        this.notice = DESIGN_RULE_4_NOTICE;
     }
 
     public Long getId() {
@@ -99,27 +102,11 @@ public class AdminCompanyResponse {
         this.description = description;
     }
 
-    public Long getUserId() {
-        return userId;
+    public String getNotice() {
+        return notice;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public long getInternshipCount() {
-        return internshipCount;
-    }
-
-    public void setInternshipCount(long internshipCount) {
-        this.internshipCount = internshipCount;
+    public void setNotice(String notice) {
+        this.notice = notice;
     }
 }

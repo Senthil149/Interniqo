@@ -40,6 +40,9 @@ class CompanyControllerTest {
     @MockBean
     private InternshipService internshipService;
 
+    @MockBean
+    private com.internship.platform.service.CompanyService companyService;
+
     private UsernamePasswordAuthenticationToken auth(String email, String role) {
         return new UsernamePasswordAuthenticationToken(
                 email,
@@ -147,5 +150,53 @@ class CompanyControllerTest {
 
         mockMvc.perform(delete("/api/company/internships/101").principal(auth("careers@acme.com", "COMPANY")))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("GET /api/company/profile returns profile with domain signals")
+    void getProfileReturnsDetails() throws Exception {
+        com.internship.platform.dto.CompanyProfileResponse resp = new com.internship.platform.dto.CompanyProfileResponse();
+        resp.setId(10L);
+        resp.setCompanyName("Acme Corp");
+        resp.setEmail("careers@acme.com");
+        resp.setEmailVerified(true);
+        resp.setPersonalEmail(false);
+        resp.setWebsiteDomainMatch(true);
+        resp.setWebsite("https://acme.com");
+
+        when(companyService.getProfile("careers@acme.com")).thenReturn(resp);
+
+        mockMvc.perform(get("/api/company/profile").principal(auth("careers@acme.com", "COMPANY")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.companyName").value("Acme Corp"))
+                .andExpect(jsonPath("$.emailVerified").value(true))
+                .andExpect(jsonPath("$.personalEmail").value(false))
+                .andExpect(jsonPath("$.websiteDomainMatch").value(true))
+                .andExpect(jsonPath("$.notice").exists());
+    }
+
+    @Test
+    @DisplayName("PUT /api/company/profile updates profile and recalculates domain signals")
+    void updateProfileReturnsUpdated() throws Exception {
+        com.internship.platform.dto.CompanyProfileRequest req = new com.internship.platform.dto.CompanyProfileRequest(
+                "Acme Corp", "https://acme.com", "USA", "Tech leader"
+        );
+        com.internship.platform.dto.CompanyProfileResponse resp = new com.internship.platform.dto.CompanyProfileResponse();
+        resp.setId(10L);
+        resp.setCompanyName("Acme Corp");
+        resp.setEmail("careers@acme.com");
+        resp.setWebsite("https://acme.com");
+        resp.setWebsiteDomainMatch(true);
+
+        when(companyService.updateProfile(eq("careers@acme.com"), any(com.internship.platform.dto.CompanyProfileRequest.class)))
+                .thenReturn(resp);
+
+        mockMvc.perform(put("/api/company/profile")
+                        .principal(auth("careers@acme.com", "COMPANY"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.website").value("https://acme.com"))
+                .andExpect(jsonPath("$.websiteDomainMatch").value(true));
     }
 }

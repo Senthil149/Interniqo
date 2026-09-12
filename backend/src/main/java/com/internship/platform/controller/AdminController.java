@@ -80,11 +80,21 @@ public class AdminController {
     }
 
     /**
-     * List companies with statistics and verification status.
+     * List companies with statistics, verification status, and domain quality filters.
      */
     @GetMapping("/companies")
-    public List<AdminCompanyResponse> getCompanies() {
-        return adminService.getCompanies();
+    public List<AdminCompanyResponse> getCompanies(
+            @RequestParam(required = false) Boolean emailVerified,
+            @RequestParam(required = false) Boolean personalEmail,
+            @RequestParam(required = false) Boolean websiteMatch,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir) {
+        if (emailVerified == null && personalEmail == null && websiteMatch == null
+                && (search == null || search.isBlank()) && sortBy == null && sortDir == null) {
+            return adminService.getCompanies();
+        }
+        return adminService.getCompanies(emailVerified, personalEmail, websiteMatch, search, sortBy, sortDir);
     }
 
     /**

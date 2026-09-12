@@ -9,6 +9,7 @@ import MyInternshipsPage from './pages/company/MyInternshipsPage.jsx'
 import CreateInternshipPage from './pages/company/CreateInternshipPage.jsx'
 import EditInternshipPage from './pages/company/EditInternshipPage.jsx'
 import CompanyApplicationsPage from './pages/company/CompanyApplicationsPage.jsx'
+import CompanyProfilePage from './pages/company/CompanyProfilePage.jsx'
 import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
 import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
 import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
@@ -59,6 +60,12 @@ function NavBar() {
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
               Post Internship
+            </NavLink>
+            <NavLink
+              to="/company/profile"
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+            >
+              Profile
             </NavLink>
           </>
         )}
@@ -218,6 +225,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute requiredRole="COMPANY">
                 <EditInternshipPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/company/profile"
+            element={
+              <ProtectedRoute requiredRole="COMPANY">
+                <CompanyProfilePage />
               </ProtectedRoute>
             }
           />

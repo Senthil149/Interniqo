@@ -4,6 +4,7 @@ import { getInternship } from '../../api/internships.js'
 import { applyToInternship, checkApplication } from '../../api/applications.js'
 import { useAuth } from '../../auth/AuthContext.jsx'
 import RiskBadge from '../../components/RiskBadge.jsx'
+import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
 
 const WORK_MODE_COLORS = {
   REMOTE: 'bg-sky-100 text-sky-700',
@@ -124,7 +125,17 @@ function InternshipDetailPage() {
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{internship.title}</h1>
-            <p className="mt-1 text-base text-slate-500">{internship.companyName}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-base font-semibold text-slate-700">{internship.companyName}</span>
+              <CompanyVerificationBadge
+                verified={internship.companyEmailVerified}
+                personalEmail={internship.companyPersonalEmail}
+                websiteDomainMatch={internship.companyWebsiteDomainMatch}
+                website={internship.companyWebsite}
+                showWebsiteLink={true}
+                size="md"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <RiskBadge

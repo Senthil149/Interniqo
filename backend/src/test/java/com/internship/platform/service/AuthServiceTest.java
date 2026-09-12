@@ -56,6 +56,9 @@ class AuthServiceTest {
     @Mock
     private EmailVerificationService emailVerificationService;
 
+    @org.mockito.Spy
+    private DomainQualityService domainQualityService = new DomainQualityService();
+
     @InjectMocks
     private AuthService authService;
 
@@ -137,6 +140,72 @@ class AuthServiceTest {
         verify(emailVerificationService, times(1)).createAndSendVerification(any(Company.class));
         verify(studentRepository, never()).save(any(Student.class));
         verify(jwtService, never()).createAccessToken(any());
+    }
+
+    @Test
+    @DisplayName("register: Company registration with personal email provider flags personalEmail=true and does NOT block (Design Rule #4)")
+    void registerCompany_withPersonalEmail_flagsAccountWithoutBlocking() {
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Small Shop");
+        request.setEmail("founder@gmail.com");
+        request.setPassword("Secret123!");
+        request.setRole(UserRole.COMPANY);
+        request.setCompanyName("Small Shop");
+
+        User createdUser = new User();
+        createdUser.setId(3L);
+        createdUser.setEmail("founder@gmail.com");
+        createdUser.setRole(UserRole.COMPANY);
+
+        when(userRepository.existsByEmail("founder@gmail.com")).thenReturn(false);
+        when(passwordEncoder.encode("Secret123!")).thenReturn("hashed_secret");
+        when(userRepository.save(any(User.class))).thenReturn(createdUser);
+
+        org.mockito.ArgumentCaptor<Company> captor = org.mockito.ArgumentCaptor.forClass(Company.class);
+        when(companyRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
+
+        com.internship.platform.dto.RegisterResponse response = authService.register(request);
+
+        assertNotNull(response);
+        assertTrue(response.isRequiresVerification());
+        Company savedCompany = captor.getValue();
+        assertNotNull(savedCompany);
+        assertTrue(savedCompany.isPersonalEmail(), "Company registered with gmail.com must have personalEmail=true");
+        assertFalse(savedCompany.isWebsiteDomainMatch(), "No website provided, so websiteDomainMatch must be false");
+        verify(emailVerificationService, times(1)).createAndSendVerification(any(Company.class));
+    }
+
+    @Test
+    @DisplayName("register: Company registration with website matching email domain sets websiteDomainMatch=true")
+    void registerCompany_withMatchingWebsite_setsWebsiteDomainMatch() {
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Uber HR");
+        request.setEmail("careers@uber.com");
+        request.setPassword("Secret123!");
+        request.setRole(UserRole.COMPANY);
+        request.setCompanyName("Uber Technologies");
+        request.setWebsite("https://www.uber.com");
+
+        User createdUser = new User();
+        createdUser.setId(4L);
+        createdUser.setEmail("careers@uber.com");
+        createdUser.setRole(UserRole.COMPANY);
+
+        when(userRepository.existsByEmail("careers@uber.com")).thenReturn(false);
+        when(passwordEncoder.encode("Secret123!")).thenReturn("hashed_secret");
+        when(userRepository.save(any(User.class))).thenReturn(createdUser);
+
+        org.mockito.ArgumentCaptor<Company> captor = org.mockito.ArgumentCaptor.forClass(Company.class);
+        when(companyRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
+
+        com.internship.platform.dto.RegisterResponse response = authService.register(request);
+
+        assertNotNull(response);
+        Company savedCompany = captor.getValue();
+        assertNotNull(savedCompany);
+        assertFalse(savedCompany.isPersonalEmail(), "Corporate email must have personalEmail=false");
+        assertTrue(savedCompany.isWebsiteDomainMatch(), "careers@uber.com matching https://www.uber.com must set websiteDomainMatch=true");
+        assertEquals("https://www.uber.com", savedCompany.getWebsite());
     }
 
     @Test
