@@ -118,9 +118,9 @@ function RegisterPage() {
   // STEP 2: In-flow 6-digit code verification view
   if (step === 'VERIFY') {
     return (
-      <section className="mx-auto max-w-md space-y-6">
-        <div className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 shadow-xs ring-1 ring-indigo-100">
+      <div className="mx-auto max-w-md space-y-6 py-6 animate-fade-in">
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-xs ring-1 ring-blue-100 mb-3">
             <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -130,50 +130,40 @@ function RegisterPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Verify your email</h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900">Verify your email</h1>
+          <p className="text-xs sm:text-sm text-slate-600">
             We sent a 6-digit verification code to{' '}
-            <span className="font-semibold text-slate-900">{email}</span>.
+            <span className="font-semibold text-slate-900 font-mono">{email}</span>.
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             Please enter the code below to activate your account.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-5">
-          {verifyError ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 flex items-start gap-2.5">
-              <svg className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+        <div className="card-base p-6 sm:p-8 space-y-5 shadow-sm">
+          {verifyError && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 flex items-start gap-2.5 animate-scale-in">
+              <span className="text-rose-500 font-bold">⚠️</span>
               <span>{verifyError}</span>
             </div>
-          ) : null}
+          )}
 
-          {resendStatus ? (
+          {resendStatus && (
             <div
-              className={`rounded-xl border p-3.5 text-xs flex items-start gap-2.5 ${
+              className={`rounded-2xl border p-3.5 text-xs flex items-start gap-2.5 animate-scale-in ${
                 resendStatus.type === 'success'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                   : 'border-rose-200 bg-rose-50 text-rose-700'
               }`}
             >
-              {resendStatus.type === 'success' ? (
-                <svg className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
+              <span>{resendStatus.type === 'success' ? '✅' : '⚠️'}</span>
               <span>{resendStatus.text}</span>
             </div>
-          ) : null}
+          )}
 
           <form className="space-y-5" onSubmit={handleVerifySubmit}>
             <div>
-              <label htmlFor="verification-code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+              <label htmlFor="verification-code-input" className="block text-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 6-Digit Verification Code
               </label>
               <input
@@ -191,7 +181,7 @@ function RegisterPage() {
                   if (verifyError) setVerifyError('')
                 }}
                 placeholder="••••••"
-                className="w-full text-center font-mono text-3xl font-bold tracking-[0.4em] py-3.5 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition shadow-inner placeholder:text-slate-300"
+                className="w-full text-center font-mono text-3xl font-bold tracking-[0.4em] py-3.5 rounded-xl border border-slate-300 bg-slate-50/50 text-slate-900 transition focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-inner placeholder:text-slate-300"
               />
               <p className="mt-2 text-center text-xs text-slate-400">
                 Code expires in 10 minutes.
@@ -201,23 +191,23 @@ function RegisterPage() {
             <button
               type="submit"
               disabled={verifying || code.trim().length !== 6}
-              className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full py-3 text-sm"
             >
               {verifying ? 'Activating Account…' : 'Verify & Activate Account'}
             </button>
           </form>
 
           {/* Resend code section with cooldown */}
-          <div className="pt-2 border-t border-slate-100 text-center space-y-3">
+          <div className="pt-2 border-t border-slate-100 text-center space-y-2">
             <p className="text-xs text-slate-500">Didn’t receive the code or need a new one?</p>
             <button
               type="button"
               onClick={handleResendCode}
               disabled={resendCooldown > 0}
-              className={`text-xs font-semibold transition ${
+              className={`text-xs font-bold transition cursor-pointer ${
                 resendCooldown > 0
                   ? 'text-slate-400 cursor-not-allowed'
-                  : 'text-indigo-600 hover:text-indigo-700 underline'
+                  : 'text-blue-600 hover:text-blue-800 underline'
               }`}
             >
               {resendCooldown > 0
@@ -239,125 +229,146 @@ function RegisterPage() {
                 setVerifyError('')
                 setResendStatus(null)
               }}
-              className="text-xs text-slate-500 hover:text-slate-700 transition"
+              className="text-xs text-slate-500 hover:text-slate-700 transition cursor-pointer"
             >
               ← Change email address or details
             </button>
           </div>
         </div>
-      </section>
+      </div>
     )
   }
 
   // STEP 1: Registration form
   return (
-    <section className="mx-auto max-w-md space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create an account</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Sign up as a student or company. A 6-digit code will be sent to verify your email.
+    <div className="mx-auto max-w-md space-y-6 py-6 animate-fade-in">
+      <div className="text-center space-y-2">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm mb-3">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+        </div>
+        <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          Create an Account
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500">
+          Sign up as a student or recruiter. A secure 6-digit verification code will be issued.
         </p>
       </div>
 
-      <form className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm" onSubmit={handleRegisterSubmit}>
-        {error ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-            {error}
+      <div className="card-base p-6 sm:p-8 shadow-sm">
+        <form className="space-y-4" onSubmit={handleRegisterSubmit}>
+          {error && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-scale-in">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Full Name
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              placeholder="e.g. Maya Lin"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </div>
-        ) : null}
 
-        <label className="block text-sm font-medium text-slate-700">
-          Full Name
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-            placeholder="e.g. Maya Lin"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </label>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Email Address
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              type="email"
+              placeholder="e.g. maya.lin@stanford.edu"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Email address
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-            type="email"
-            placeholder="e.g. maya.lin@stanford.edu"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Password
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              type="password"
+              minLength={8}
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Password
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-            type="password"
-            minLength={8}
-            placeholder="At least 8 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Account Role
+            </label>
+            <select
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="STUDENT">Student (Apply &amp; earn credentials)</option>
+              <option value="COMPANY">Company (Post listings &amp; hire)</option>
+            </select>
+          </div>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Account Role
-          <select
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
+          {role === 'COMPANY' && (
+            <div className="space-y-4 pt-2 border-t border-slate-100">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Company / Organization Name
+                </label>
+                <input
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="e.g. Quantum Leap Technologies"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Company Website <span className="text-xs text-slate-400 font-normal lowercase">(optional)</span>
+                </label>
+                <input
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="e.g. https://quantumleap.tech"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+                <span className="mt-1 block text-xs text-slate-500">
+                  If provided, we verify whether your work email domain matches your company website host.
+                </span>
+              </div>
+            </div>
+          )}
+
+          <button
+            className="btn-primary w-full py-2.5 text-sm mt-2"
+            type="submit"
+            disabled={submitting}
           >
-            <option value="STUDENT">Student (Apply & earn credentials)</option>
-            <option value="COMPANY">Company (Post listings & hire)</option>
-          </select>
-        </label>
+            {submitting ? 'Sending verification code…' : 'Register & Get Code'}
+          </button>
+        </form>
 
-        {role === 'COMPANY' ? (
-          <>
-            <label className="block text-sm font-medium text-slate-700">
-              Company Name
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                placeholder="e.g. Quantum Leap Technologies"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                required
-              />
-            </label>
-
-            <label className="block text-sm font-medium text-slate-700">
-              Company Website <span className="text-xs text-slate-400 font-normal">(Optional)</span>
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                placeholder="e.g. https://quantumleap.tech"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-              />
-              <span className="mt-1 block text-xs text-slate-500">
-                If provided, we verify whether your work email domain matches your company website.
-              </span>
-            </label>
-          </>
-        ) : null}
-
-        <button
-          className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-60"
-          type="submit"
-          disabled={submitting}
-        >
-          {submitting ? 'Sending verification code…' : 'Register & Get Code'}
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-slate-600">
-        Already registered?{' '}
-        <Link className="font-semibold text-indigo-600 hover:text-indigo-500 underline" to="/login">
-          Sign in
-        </Link>
-      </p>
-    </section>
+        <p className="mt-6 pt-4 text-center text-xs text-slate-500 border-t border-slate-100">
+          Already registered?{' '}
+          <Link className="font-bold text-blue-600 hover:text-blue-800 transition" to="/login">
+            Sign in →
+          </Link>
+        </p>
+      </div>
+    </div>
   )
 }
 

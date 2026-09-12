@@ -112,9 +112,19 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md space-y-6">
+    <section className="mx-auto max-w-md space-y-6 animate-fade-in-up">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 shadow-xs">
+          <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+            />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-display">
           {step === 'SUCCESS' ? 'Password Updated' : 'Reset your password'}
         </h1>
         <p className="mt-1.5 text-sm text-slate-600">
@@ -124,24 +134,24 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
         {/* SUCCESS VIEW */}
         {step === 'SUCCESS' && (
-          <div className="space-y-5 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+          <div className="space-y-5 text-center animate-scale-in">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 shadow-xs">
               <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div className="space-y-1">
-              <p className="font-semibold text-slate-900">All set!</p>
+              <p className="font-semibold text-slate-900 font-display">All set!</p>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Your password has been changed. You can now sign in with your new password.
               </p>
             </div>
             <Link
               to="/login"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800"
             >
               Sign in to your account
             </Link>
@@ -152,7 +162,7 @@ export default function ForgotPasswordPage() {
         {step === 'EMAIL' && (
           <form className="space-y-4" onSubmit={handleSendCode}>
             {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 animate-scale-in">
                 {error}
               </div>
             ) : null}
@@ -160,7 +170,7 @@ export default function ForgotPasswordPage() {
             <label className="block text-sm font-medium text-slate-700">
               Email address
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
                 type="email"
                 required
                 autoFocus
@@ -171,7 +181,7 @@ export default function ForgotPasswordPage() {
             </label>
 
             <button
-              className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-60"
+              className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800 disabled:opacity-60 disabled:hover:translate-y-0"
               type="submit"
               disabled={submitting || !email.trim()}
             >
@@ -179,7 +189,7 @@ export default function ForgotPasswordPage() {
             </button>
 
             <div className="pt-2 text-center">
-              <Link to="/login" className="text-xs font-medium text-slate-600 hover:text-slate-900">
+              <Link to="/login" className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition">
                 ← Return to Sign in
               </Link>
             </div>
@@ -190,14 +200,14 @@ export default function ForgotPasswordPage() {
         {step === 'RESET' && (
           <form className="space-y-4" onSubmit={handleResetPassword}>
             {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-scale-in">
                 {error}
               </div>
             ) : null}
 
             {resendMessage ? (
               <div
-                className={`rounded-xl border p-3 text-xs ${
+                className={`rounded-xl border p-3 text-xs animate-scale-in ${
                   resendMessage.type === 'success'
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                     : 'border-rose-200 bg-rose-50 text-rose-700'
@@ -208,7 +218,7 @@ export default function ForgotPasswordPage() {
             ) : null}
 
             <div>
-              <label htmlFor="reset-code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label htmlFor="reset-code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 font-mono">
                 6-Digit Reset Code
               </label>
               <input
@@ -226,7 +236,7 @@ export default function ForgotPasswordPage() {
                   if (error) setError(null)
                 }}
                 placeholder="••••••"
-                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition shadow-inner placeholder:text-slate-300"
+                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-inner placeholder:text-slate-300"
               />
               <p className="mt-1 text-center text-[11px] text-slate-400">
                 Code expires in 10 minutes.
@@ -236,7 +246,7 @@ export default function ForgotPasswordPage() {
             <label className="block text-sm font-medium text-slate-700">
               New Password
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
                 type="password"
                 minLength={8}
                 required
@@ -249,7 +259,7 @@ export default function ForgotPasswordPage() {
             <label className="block text-sm font-medium text-slate-700">
               Confirm New Password
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
                 type="password"
                 minLength={8}
                 required
@@ -260,7 +270,7 @@ export default function ForgotPasswordPage() {
             </label>
 
             <button
-              className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               type="submit"
               disabled={submitting || code.trim().length !== 6 || newPassword.length < 8}
             >
@@ -275,7 +285,7 @@ export default function ForgotPasswordPage() {
                 className={`text-xs font-semibold transition ${
                   resendCooldown > 0
                     ? 'text-slate-400 cursor-not-allowed'
-                    : 'text-indigo-600 hover:text-indigo-700 underline'
+                    : 'text-blue-600 hover:text-blue-700 underline'
                 }`}
               >
                 {resendCooldown > 0

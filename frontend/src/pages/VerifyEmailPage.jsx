@@ -136,10 +136,10 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md py-8">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+    <div className="mx-auto max-w-md py-8 animate-fade-in-up">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-6">
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 shadow-xs">
             <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -149,21 +149,21 @@ export default function VerifyEmailPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Email Verification</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-display">Email Verification</h1>
           <p className="mt-1 text-sm text-slate-600">
             Enter your email and the 6-digit code sent to your inbox.
           </p>
         </div>
 
         {success ? (
-          <div className="space-y-4 text-center">
+          <div className="space-y-4 text-center animate-scale-in">
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 space-y-1">
-              <p className="font-semibold text-emerald-900">Account Verified!</p>
+              <p className="font-semibold text-emerald-900 font-display">Account Verified!</p>
               <p>{successNotice || 'Your email address has been verified successfully.'}</p>
             </div>
             <Link
               to="/dashboard"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800"
             >
               Go to Dashboard →
             </Link>
@@ -171,14 +171,14 @@ export default function VerifyEmailPage() {
         ) : (
           <form className="space-y-4" onSubmit={handleVerify}>
             {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-scale-in">
                 {error}
               </div>
             ) : null}
 
             {resendMessage ? (
               <div
-                className={`rounded-xl border p-3 text-xs ${
+                className={`rounded-xl border p-3 text-xs animate-scale-in ${
                   resendMessage.type === 'success'
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                     : 'border-rose-200 bg-rose-50 text-rose-700'
@@ -196,12 +196,12 @@ export default function VerifyEmailPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
               />
             </label>
 
             <div>
-              <label htmlFor="code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label htmlFor="code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 font-mono">
                 6-Digit Verification Code
               </label>
               <input
@@ -218,7 +218,7 @@ export default function VerifyEmailPage() {
                   if (error) setError(null)
                 }}
                 placeholder="••••••"
-                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition shadow-inner placeholder:text-slate-300"
+                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-inner placeholder:text-slate-300"
               />
               <p className="mt-1 text-center text-[11px] text-slate-400">
                 Code expires in 10 minutes.
@@ -228,7 +228,7 @@ export default function VerifyEmailPage() {
             <button
               type="submit"
               disabled={submitting || code.trim().length !== 6 || !email.trim()}
-              className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               {submitting ? 'Verifying Code…' : 'Verify & Activate'}
             </button>
@@ -241,7 +241,7 @@ export default function VerifyEmailPage() {
                 className={`text-xs font-semibold transition ${
                   resendCooldown > 0 || !email.trim()
                     ? 'text-slate-400 cursor-not-allowed'
-                    : 'text-indigo-600 hover:text-indigo-700 underline'
+                    : 'text-blue-600 hover:text-blue-700 underline'
                 }`}
               >
                 {resendCooldown > 0

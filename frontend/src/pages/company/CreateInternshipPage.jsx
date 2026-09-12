@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { createInternship } from '../../api/internships.js'
 
 const INPUT =
-  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'
-const LABEL = 'block text-sm font-medium text-slate-700'
+  'mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+const LABEL = 'block text-xs font-bold uppercase tracking-wider text-slate-700'
 
 const EMPTY_FORM = {
   title: '',
@@ -23,8 +23,10 @@ const EMPTY_FORM = {
 
 function Section({ title, children }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-base font-semibold text-slate-800">{title}</h2>
+    <section className="card-base p-6 space-y-4">
+      <h2 className="font-heading text-base font-bold text-slate-900 border-b border-slate-100 pb-2.5">
+        {title}
+      </h2>
       <div className="space-y-4">{children}</div>
     </section>
   )
@@ -62,33 +64,35 @@ function CreateInternshipPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
       {/* Page heading */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+      <div className="border-b border-slate-200/80 pb-5">
+        <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
           Post a New Internship
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Fill in the details about your internship opportunity. Required fields are marked.
+        <p className="mt-1 text-sm text-slate-500 max-w-xl">
+          Publish your opening with comprehensive cross-border, compensation, and skill criteria.
         </p>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700 animate-scale-in">
+          {error}
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
-        <Section title="Basic Information">
+        <Section title="Basic Role Information">
           <div>
             <label className={LABEL} htmlFor="title">
-              Title <span className="text-red-500">*</span>
+              Role Title <span className="text-rose-500">*</span>
             </label>
             <input
               id="title"
               name="title"
               className={INPUT}
-              placeholder="e.g. Software Engineering Intern"
+              placeholder="e.g. Full-Stack Software Engineering Intern"
               value={form.title}
               onChange={handleChange}
               required
@@ -96,28 +100,28 @@ function CreateInternshipPage() {
           </div>
           <div>
             <label className={LABEL} htmlFor="description">
-              Description
+              Role Description &amp; Projects
             </label>
             <textarea
               id="description"
               name="description"
               rows={4}
               className={INPUT}
-              placeholder="Describe the role, responsibilities, and what the intern will work on…"
+              placeholder="Describe the projects, expected outcomes, team dynamic, and mentoring support…"
               value={form.description}
               onChange={handleChange}
             />
           </div>
           <div>
             <label className={LABEL} htmlFor="requiredSkills">
-              Required Skills
+              Target Skills (Parsed by SBERT Matcher)
             </label>
             <textarea
               id="requiredSkills"
               name="requiredSkills"
               rows={2}
               className={INPUT}
-              placeholder="e.g. Python, React, SQL — comma separated or free text"
+              placeholder="e.g. Python, PyTorch, React, TypeScript, Docker, REST APIs"
               value={form.requiredSkills}
               onChange={handleChange}
             />
@@ -125,17 +129,17 @@ function CreateInternshipPage() {
         </Section>
 
         {/* Location */}
-        <Section title="Location">
+        <Section title="Work Arrangement &amp; Location">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={LABEL} htmlFor="country">
-                Country <span className="text-red-500">*</span>
+                Country <span className="text-rose-500">*</span>
               </label>
               <input
                 id="country"
                 name="country"
                 className={INPUT}
-                placeholder="e.g. India"
+                placeholder="e.g. Germany, Singapore, United States"
                 value={form.country}
                 onChange={handleChange}
                 required
@@ -143,13 +147,13 @@ function CreateInternshipPage() {
             </div>
             <div>
               <label className={LABEL} htmlFor="city">
-                City
+                City (Optional)
               </label>
               <input
                 id="city"
                 name="city"
                 className={INPUT}
-                placeholder="e.g. Bangalore"
+                placeholder="e.g. Munich, Remote"
                 value={form.city}
                 onChange={handleChange}
               />
@@ -157,7 +161,7 @@ function CreateInternshipPage() {
           </div>
           <div>
             <label className={LABEL} htmlFor="workMode">
-              Work Mode <span className="text-red-500">*</span>
+              Work Mode <span className="text-rose-500">*</span>
             </label>
             <select
               id="workMode"
@@ -167,7 +171,7 @@ function CreateInternshipPage() {
               onChange={handleChange}
               required
             >
-              <option value="REMOTE">Remote</option>
+              <option value="REMOTE">Remote (Cross-Border)</option>
               <option value="HYBRID">Hybrid</option>
               <option value="ONSITE">Onsite</option>
             </select>
@@ -175,7 +179,7 @@ function CreateInternshipPage() {
         </Section>
 
         {/* Schedule & Compensation */}
-        <Section title="Schedule & Compensation">
+        <Section title="Timeline &amp; Compensation">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={LABEL} htmlFor="duration">
@@ -185,7 +189,7 @@ function CreateInternshipPage() {
                 id="duration"
                 name="duration"
                 className={INPUT}
-                placeholder="e.g. 3 months"
+                placeholder="e.g. 3-6 months"
                 value={form.duration}
                 onChange={handleChange}
               />
@@ -216,7 +220,7 @@ function CreateInternshipPage() {
                 min="0"
                 step="0.01"
                 className={INPUT}
-                placeholder="e.g. 500"
+                placeholder="e.g. 1500"
                 value={form.stipend}
                 onChange={handleChange}
               />
@@ -229,7 +233,7 @@ function CreateInternshipPage() {
                 id="currency"
                 name="currency"
                 className={INPUT}
-                placeholder="e.g. USD"
+                placeholder="e.g. USD, EUR, INR"
                 maxLength={8}
                 value={form.currency}
                 onChange={handleChange}
@@ -239,54 +243,53 @@ function CreateInternshipPage() {
         </Section>
 
         {/* Requirements */}
-        <Section title="Requirements & Cross-Border Info">
+        <Section title="Eligibility &amp; Visa Documentation">
           <div>
             <label className={LABEL} htmlFor="eligibility">
-              Eligibility Criteria
+              Candidate Eligibility
             </label>
             <textarea
               id="eligibility"
               name="eligibility"
               rows={3}
               className={INPUT}
-              placeholder="e.g. Open to undergraduate students in Computer Science…"
+              placeholder="e.g. Enrolled in accredited degree program, final-year or recent graduate…"
               value={form.eligibility}
               onChange={handleChange}
             />
           </div>
           <div>
             <label className={LABEL} htmlFor="visaInformation">
-              Visa Information
+              Visa Information &amp; Cross-Border Guidance
             </label>
             <textarea
               id="visaInformation"
               name="visaInformation"
               rows={3}
               className={INPUT}
-              placeholder="Describe visa support or requirements for international applicants…"
+              placeholder="Document requirements for international applicants or remote work authorization…"
               value={form.visaInformation}
               onChange={handleChange}
             />
-            <p className="mt-1 text-xs text-slate-400">
-              Note: providing this information proves the company has documented visa support,
-              not that sponsorship is guaranteed.
+            <p className="mt-1.5 text-xs text-slate-400">
+              Note: documented visa details establish transparent expectations for students, but do not imply formal government sponsorship guarantees.
             </p>
           </div>
         </Section>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60"
+            className="btn-primary"
           >
-            {submitting ? 'Posting…' : 'Post Internship'}
+            {submitting ? 'Publishing Opportunity…' : 'Publish Internship Posting'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/company/internships')}
-            className="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="btn-secondary"
           >
             Cancel
           </button>

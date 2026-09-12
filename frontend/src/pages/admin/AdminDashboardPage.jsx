@@ -267,7 +267,7 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
@@ -328,7 +328,7 @@ export default function AdminDashboardPage() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Companies</p>
-          <p className="mt-1 text-2xl font-bold text-indigo-600">
+          <p className="mt-1 text-2xl font-bold text-blue-600">
             {loadingMetrics ? '...' : metrics?.totalCompanies ?? 0}
           </p>
           <p className="text-[11px] text-emerald-600 mt-0.5 font-medium">
@@ -393,7 +393,7 @@ export default function AdminDashboardPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 transition whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-600 font-semibold'
+                  ? 'border-blue-600 text-blue-600 font-semibold'
                   : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
               }`}
             >
@@ -448,7 +448,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Administrator Accounts:</span>
-                  <span className="font-semibold text-indigo-600">{metrics?.totalAdmins ?? 0}</span>
+                  <span className="font-semibold text-blue-600">{metrics?.totalAdmins ?? 0}</span>
                 </div>
                 <div className="flex justify-between py-1 pt-2 font-bold text-slate-900">
                   <span>Total Registered:</span>
@@ -494,7 +494,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Blockchain Credentials:</span>
-                  <span className="font-semibold text-indigo-600">{metrics?.totalBlockchainCredentials ?? 0}</span>
+                  <span className="font-semibold text-blue-600">{metrics?.totalBlockchainCredentials ?? 0}</span>
                 </div>
                 <div className="flex justify-between py-1 pt-2 font-bold text-slate-900">
                   <span>High/Med Risk Flags:</span>
@@ -519,7 +519,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setUserRoleFilter(r)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                     userRoleFilter === r
-                      ? 'bg-indigo-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -533,7 +533,7 @@ export default function AdminDashboardPage() {
               placeholder="Search users by name or email..."
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
-              className="w-full sm:w-64 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
+              className="w-full sm:w-64 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
             />
           </div>
 
@@ -627,7 +627,7 @@ export default function AdminDashboardPage() {
               placeholder="Search by name, email, domain..."
               value={companySearch}
               onChange={(e) => setCompanySearch(e.target.value)}
-              className="w-full sm:w-72 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
+              className="w-full sm:w-72 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
             />
           </div>
 
@@ -638,7 +638,7 @@ export default function AdminDashboardPage() {
               <select
                 value={companyDomainFilter}
                 onChange={(e) => setCompanyDomainFilter(e.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-blue-500 focus:outline-none"
               >
                 <option value="ALL">All Domains ({companies.length})</option>
                 <option value="ORG">Verified Org Domains</option>
@@ -650,7 +650,7 @@ export default function AdminDashboardPage() {
               <select
                 value={companyWebsiteFilter}
                 onChange={(e) => setCompanyWebsiteFilter(e.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-blue-500 focus:outline-none"
               >
                 <option value="ALL">All Website States</option>
                 <option value="MATCHED">🌐 Matches Website Domain</option>
@@ -663,7 +663,7 @@ export default function AdminDashboardPage() {
               <select
                 value={companySort}
                 onChange={(e) => setCompanySort(e.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-blue-500 focus:outline-none"
               >
                 <option value="newest">Newest First</option>
                 <option value="name">Company Name (A-Z)</option>
@@ -710,7 +710,7 @@ export default function AdminDashboardPage() {
                               href={c.website.startsWith('http') ? c.website : `https://${c.website}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-indigo-600 hover:underline text-[11px]"
+                              className="text-blue-600 hover:underline text-[11px]"
                             >
                               {c.website}
                             </a>
@@ -767,7 +767,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setInternshipStatusFilter(s)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                     internshipStatusFilter === s
-                      ? 'bg-indigo-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -781,7 +781,7 @@ export default function AdminDashboardPage() {
               placeholder="Search internships..."
               value={internshipSearch}
               onChange={(e) => setInternshipSearch(e.target.value)}
-              className="w-full sm:w-64 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
+              className="w-full sm:w-64 rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
             />
           </div>
 
@@ -808,7 +808,7 @@ export default function AdminDashboardPage() {
                       <td className="px-4 py-3">
                         <Link
                           to={`/internships/${i.internshipId}`}
-                          className="font-bold text-slate-900 hover:text-indigo-600 transition"
+                          className="font-bold text-slate-900 hover:text-blue-600 transition"
                         >
                           {i.title}
                         </Link>
@@ -913,7 +913,7 @@ export default function AdminDashboardPage() {
                         <span className="font-mono text-xs text-slate-400">#{item.internshipId}</span>
                         <Link
                           to={`/internships/${item.internshipId}`}
-                          className="text-base font-bold text-slate-900 hover:text-indigo-600 transition"
+                          className="text-base font-bold text-slate-900 hover:text-blue-600 transition"
                         >
                           {item.title}
                         </Link>
@@ -996,7 +996,7 @@ export default function AdminDashboardPage() {
               onClick={() => setVerificationSubTab('email')}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 verificationSubTab === 'email'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -1006,7 +1006,7 @@ export default function AdminDashboardPage() {
               onClick={() => setVerificationSubTab('blockchain')}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 verificationSubTab === 'blockchain'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -1082,7 +1082,7 @@ export default function AdminDashboardPage() {
                 <tbody className="divide-y divide-slate-100">
                   {blockchainRecords.map((br) => (
                     <tr key={br.id} className="hover:bg-slate-50/70 transition">
-                      <td className="px-4 py-3 font-mono font-bold text-indigo-700">
+                      <td className="px-4 py-3 font-mono font-bold text-blue-700">
                         {br.credentialId}
                       </td>
                       <td className="px-4 py-3">
@@ -1101,7 +1101,7 @@ export default function AdminDashboardPage() {
                         <Link
                           to={`/verify-credential/${encodeURIComponent(br.credentialId)}`}
                           target="_blank"
-                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+                          className="text-xs font-semibold text-blue-600 hover:text-blue-800 underline"
                         >
                           Verify on Ledger →
                         </Link>

@@ -22,27 +22,32 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 
 const NAV_LINK =
-  'font-medium text-slate-600 hover:text-slate-900 transition-colors'
+  'font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 rounded-lg px-3 py-1.5 transition-all duration-150 text-sm'
 const NAV_LINK_ACTIVE =
-  'font-medium text-indigo-600'
+  'font-semibold text-blue-600 bg-blue-50/90 rounded-lg px-3 py-1.5 transition-all duration-150 text-sm shadow-2xs'
 
 function NavBar() {
   const { isAuthenticated, logout, user } = useAuth()
 
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-6 py-3 text-sm">
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md transition-all">
+      <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-6 py-3 text-sm">
         {/* Brand */}
         <NavLink
           to="/"
-          className="mr-2 text-base font-bold text-indigo-600 tracking-tight"
+          className="mr-3 flex items-center gap-2 font-heading text-lg font-extrabold text-blue-600 tracking-tight transition hover:opacity-90"
         >
-          Interniqo
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span className="text-slate-900">Intern<span className="text-blue-600">iqo</span></span>
         </NavLink>
 
         {/* Company nav links */}
         {isAuthenticated && user?.role === 'COMPANY' && (
-          <>
+          <div className="flex items-center gap-1">
             <NavLink
               to="/company/internships"
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
@@ -67,12 +72,12 @@ function NavBar() {
             >
               Profile
             </NavLink>
-          </>
+          </div>
         )}
 
         {/* Student nav links */}
         {isAuthenticated && user?.role === 'STUDENT' && (
-          <>
+          <div className="flex items-center gap-1">
             <NavLink
               to="/student/internships"
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
@@ -83,7 +88,7 @@ function NavBar() {
               to="/student/recommendations"
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
-              AI Recommendations
+              AI Matches
             </NavLink>
             <NavLink
               to="/student/applications"
@@ -95,9 +100,9 @@ function NavBar() {
               to="/student/resume"
               className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
-              My Resume
+              Resume
             </NavLink>
-          </>
+          </div>
         )}
 
         {/* Admin nav links */}
@@ -120,42 +125,76 @@ function NavBar() {
 
         {/* Auth section — pushed to the right */}
         {isAuthenticated ? (
-          <>
+          <div className="ml-auto flex items-center gap-3">
             <NavLink
               to="/dashboard"
-              className={({ isActive }) =>
-                `ml-auto ${isActive ? NAV_LINK_ACTIVE : NAV_LINK}`}
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
               Dashboard
             </NavLink>
-            <span className="max-w-xs truncate text-slate-400">{user?.email}</span>
+            <div className="hidden sm:flex items-center gap-2 border-l border-slate-200 pl-3">
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-800">
+                {user?.role}
+              </span>
+              <span className="max-w-[160px] truncate text-xs font-medium text-slate-500">
+                {user?.name || user?.email}
+              </span>
+            </div>
             <button
               type="button"
-              className={NAV_LINK}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-2xs"
               onClick={logout}
             >
               Sign out
             </button>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="ml-auto flex items-center gap-2">
             <NavLink
               to="/login"
-              className={({ isActive }) =>
-                `ml-auto ${isActive ? NAV_LINK_ACTIVE : NAV_LINK}`}
+              className={({ isActive }) => isActive ? NAV_LINK_ACTIVE : NAV_LINK}
             >
               Sign in
             </NavLink>
             <NavLink
               to="/register"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 font-semibold text-white transition hover:bg-indigo-700"
+              className="btn-primary text-xs px-3.5 py-1.5"
             >
-              Register
+              Get Started
             </NavLink>
-          </>
+          </div>
         )}
       </nav>
     </header>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="mt-auto border-t border-slate-200 bg-white text-xs text-slate-500">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
+        <div className="flex items-center gap-2 font-heading font-semibold text-slate-800">
+          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 text-[10px] font-bold text-white">
+            I
+          </span>
+          Interniqo Platform
+          <span className="text-slate-400 font-normal">· IEEE Project Demo</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-6">
+          <span className="inline-flex items-center gap-1.5 text-slate-500">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            SBERT Match Engine Active
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-slate-500">
+            <span className="h-2 w-2 rounded-full bg-blue-500" />
+            Ethereum Smart Contracts Ready
+          </span>
+          <NavLink to="/verify-credential" className="hover:text-blue-600 transition">
+            Public Verifier
+          </NavLink>
+        </div>
+      </div>
+    </footer>
   )
 }
 
@@ -163,7 +202,7 @@ function AppRoutes() {
   return (
     <>
       <NavBar />
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-6 py-8">
         <Routes>
           {/* Public */}
           <Route path="/" element={<HomePage />} />
@@ -282,6 +321,7 @@ function AppRoutes() {
           />
         </Routes>
       </main>
+      <Footer />
     </>
   )
 }
@@ -290,7 +330,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
           <AppRoutes />
         </div>
       </BrowserRouter>
