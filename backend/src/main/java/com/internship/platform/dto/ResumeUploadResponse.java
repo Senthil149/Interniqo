@@ -13,6 +13,7 @@ public class ResumeUploadResponse {
     private String resumePath;
     /** True only when the Python AI service responded with HTTP 2xx. */
     private boolean aiExtractionSucceeded;
+    private String summary;
     private String skills;
     private String education;
     private String experience;
@@ -27,6 +28,9 @@ public class ResumeUploadResponse {
     public void setAiExtractionSucceeded(boolean aiExtractionSucceeded) {
         this.aiExtractionSucceeded = aiExtractionSucceeded;
     }
+
+    public String getSummary() { return summary; }
+    public void setSummary(String summary) { this.summary = summary; }
 
     public String getSkills() { return skills; }
     public void setSkills(String skills) { this.skills = skills; }

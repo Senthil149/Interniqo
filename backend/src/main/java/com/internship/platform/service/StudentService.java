@@ -86,6 +86,7 @@ public class StudentService {
         //    All fields are overwritten with new extraction values (including null) so
         //    the stored profile always reflects the most recently uploaded resume.
         extraction.ifPresent(r -> {
+            student.setSummary(r.getSummary());
             student.setSkills(r.getSkills());
             student.setEducation(r.getEducation());
             student.setExperience(r.getExperience());
@@ -165,6 +166,7 @@ public class StudentService {
         response.setResumePath(student.getResumePath());
         response.setAiExtractionSucceeded(aiSucceeded);
         if (extraction != null) {
+            response.setSummary(extraction.getSummary());
             response.setSkills(extraction.getSkills());
             response.setEducation(extraction.getEducation());
             response.setExperience(extraction.getExperience());

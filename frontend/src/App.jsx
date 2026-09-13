@@ -23,6 +23,7 @@ import VerifyCredentialPage from './pages/VerifyCredentialPage.jsx'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
+import AmbientBackground from './components/AmbientBackground.jsx'
 
 /**
  * Animated NavLink with smoothly sliding active indicator via layoutId (Category 8)
@@ -144,7 +145,7 @@ function NavBar() {
 
 function Footer() {
   return (
-    <footer className="mt-auto border-t border-warm-border bg-white text-xs text-slate-500">
+    <footer className="relative z-10 mt-auto border-t border-warm-border bg-white/90 backdrop-blur-xs text-xs text-slate-500">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
         <div className="flex items-center gap-2 font-heading font-semibold text-slate-800">
           <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary-700 text-[10px] font-bold text-white">
@@ -183,9 +184,10 @@ function AppRoutes() {
 
   return (
     <>
+      <AmbientBackground />
       <TopProgressBar />
       <NavBar />
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-8 flex-1 w-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -323,7 +325,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="flex min-h-screen flex-col bg-[#faf8f5] text-slate-800">
+        <div className="relative flex min-h-screen flex-col bg-[#faf8f5] text-slate-800 overflow-x-hidden">
           <AppRoutes />
         </div>
       </BrowserRouter>

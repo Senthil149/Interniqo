@@ -23,6 +23,9 @@ public class Student {
     private User user;
 
     @Column(columnDefinition = "TEXT")
+    private String summary;
+
+    @Column(columnDefinition = "TEXT")
     private String education;
 
     @Column(columnDefinition = "TEXT")
@@ -57,6 +60,14 @@ public class Student {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
     }
 
     public String getEducation() {

@@ -5,6 +5,7 @@ import SkeletonLoader from '../../components/SkeletonLoader.jsx'
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB — matches backend hard limit
 
 const PROFILE_FIELDS = [
+  { key: 'summary', label: 'Professional Summary', icon: '📝' },
   { key: 'skills', label: 'Technical & Professional Skills', icon: '⚡' },
   { key: 'education', label: 'Education & Academic History', icon: '🎓' },
   { key: 'experience', label: 'Professional Experience', icon: '💼' },

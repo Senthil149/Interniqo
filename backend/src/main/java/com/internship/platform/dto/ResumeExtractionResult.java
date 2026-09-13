@@ -20,12 +20,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResumeExtractionResult {
 
+    private String summary;
     private String skills;
     private String education;
     private String experience;
     private String projects;
     private String certifications;
     private String interests;
+
+    public String getSummary() { return summary; }
+    public void setSummary(String summary) { this.summary = summary; }
 
     public String getSkills() { return skills; }
     public void setSkills(String skills) { this.skills = skills; }

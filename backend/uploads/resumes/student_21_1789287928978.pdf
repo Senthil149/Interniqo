@@ -1,0 +1,60 @@
+%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length 1097 >>
+stream
+BT
+/F1 12 Tf
+72 750 Td
+(SUMMARY) Tj
+0 -18 Td
+(Senior Computer Science student with 2 years of experience in distributed systems.) Tj
+0 -18 Td
+(Passionate about building scalable backend microservices.) Tj
+0 -25 Td
+(EDUCATION) Tj
+0 -18 Td
+(Stanford University - B.S. in Computer Science, Expected June 2025) Tj
+0 -25 Td
+(TECHNICAL SKILLS) Tj
+0 -18 Td
+(Languages: Python, Java, Go, TypeScript, SQL) Tj
+0 -18 Td
+(Frameworks & Tools: Spring Boot, React, FastAPI, Docker, Kubernetes, AWS) Tj
+0 -25 Td
+(PROFESSIONAL EXPERIENCE) Tj
+0 -18 Td
+(Software Engineering Intern at Stripe - Built distributed transaction logging service.) Tj
+0 -18 Td
+(Improved throughput by 35% across payment gateways.) Tj
+0 -25 Td
+(PROJECTS) Tj
+0 -18 Td
+(Internship Intelligence Platform - SBERT semantic matching with automated risk scoring.) Tj
+0 -25 Td
+(CERTIFICATIONS) Tj
+0 -18 Td
+(AWS Certified Solutions Architect - Associate) Tj
+0 -18 Td
+(Certified Kubernetes Application Developer \(CKAD\)) Tj
+0 -25 Td
+(INTERESTS) Tj
+0 -18 Td
+(Open source contributing, Competitive programming \(Codeforces 1800\), Chess, Hiking) Tj
+ET
+endstream
+endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000236 00000 n 
+0000000300 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+500
+%%EOF

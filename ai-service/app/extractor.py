@@ -41,28 +41,32 @@ from pdfminer.high_level import extract_text
 # gating (MAX_HEADER_LINE_LENGTH) is the primary noise filter.
 
 SECTION_PATTERNS: dict[str, re.Pattern[str]] = {
-    "skills": re.compile(
-        r"\b(skills?|technical skills?|core competenc(?:ies|y)|technologies|tech stack|tools)\b",
+    "summary": re.compile(
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(?:professional\s+|career\s+|executive\s+|personal\s+)?(summary|objective|profile|about(?:\s+me)?|overview|biography)(?:\s*(?:statement|section))?[\s\:\-\|]*$",
         re.IGNORECASE,
     ),
     "education": re.compile(
-        r"\b(education|academic(?: background| qualifications?)?|qualifications?|schooling)\b",
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(education|academic(?: background| history| qualifications?)?|qualifications?|schooling|academics)(?:\s*(?:&|and)\s*(?:training|academics))?[\s\:\-\|]*$",
+        re.IGNORECASE,
+    ),
+    "skills": re.compile(
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(?:technical\s+|core\s+|professional\s+|key\s+)?(skills?|competenc(?:ies|y)|technologies|tech stack|tools|proficiencies)(?:\s*(?:&|and)\s*(?:tools|technologies|proficiencies|competencies))?[\s\:\-\|]*$",
         re.IGNORECASE,
     ),
     "experience": re.compile(
-        r"\b(experience|work experience|professional experience|employment(?: history)?|internships?)\b",
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(?:work\s+|professional\s+|employment\s+|relevant\s+|industry\s+|career\s+)?(experience|employment(?: history)?|work history|internships?|practical experience)(?:\s*(?:&|and)\s*(?:internships?|work history))?[\s\:\-\|]*$",
         re.IGNORECASE,
     ),
     "projects": re.compile(
-        r"\b(projects?|personal projects?|academic projects?|side projects?|portfolio)\b",
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(?:personal\s+|academic\s+|side\s+|key\s+|selected\s+|technical\s+)?(projects?|portfolio|project work)(?:\s*(?:&|and)\s*(?:experience|portfolio))?[\s\:\-\|]*$",
         re.IGNORECASE,
     ),
     "certifications": re.compile(
-        r"\b(certifications?|certificates?|achievements?|awards?|licenses?|credentials?)\b",
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(?:professional\s+|licenses?\s*(?:&|and)\s*|honors?\s*(?:&|and)\s*awards?|awards?\s*(?:&|and)\s*honors?|honors?|awards?|achievements?|certifications?\s*(?:&|and)\s*licenses?|licenses?\s*(?:&|and)\s*certifications?)?(certifications?|certificates?|licenses?|credentials?|accreditations?|awards?|achievements?)(?:\s*(?:&|and)\s*(?:licenses?|certificates?|credentials?|awards?|honors?))?[\s\:\-\|]*$",
         re.IGNORECASE,
     ),
     "interests": re.compile(
-        r"\b(interests?|hobbies|extra.?curricular(?: activities?)?|activities)\b",
+        r"^[\d\.\-\#\*\s\•\—\:\_]*(interests?|hobbies|extra.?curricular(?: activities?)?|activities|areas of interest|personal interests)(?:\s*(?:&|and)\s*(?:hobbies|interests?|activities))?[\s\:\-\|]*$",
         re.IGNORECASE,
     ),
 }
@@ -105,7 +109,7 @@ def parse_sections(text: str) -> dict[str, Optional[str]]:
                join them as the section content.
 
     Returns:
-        Dict with keys: skills, education, experience, projects,
+        Dict with keys: summary, education, skills, experience, projects,
         certifications, interests.  Value is a stripped, newline-joined
         content string or None if the header was not found.
 

@@ -9,6 +9,7 @@ import com.internship.platform.entity.Student;
 public class StudentProfileResponse {
 
     private Long id;
+    private String summary;
     private String skills;
     private String education;
     private String experience;
@@ -21,6 +22,7 @@ public class StudentProfileResponse {
     public static StudentProfileResponse from(Student student) {
         StudentProfileResponse r = new StudentProfileResponse();
         r.setId(student.getId());
+        r.setSummary(student.getSummary());
         r.setSkills(student.getSkills());
         r.setEducation(student.getEducation());
         r.setExperience(student.getExperience());
@@ -37,6 +39,9 @@ public class StudentProfileResponse {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getSummary() { return summary; }
+    public void setSummary(String summary) { this.summary = summary; }
 
     public String getSkills() { return skills; }
     public void setSkills(String skills) { this.skills = skills; }

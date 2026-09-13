@@ -155,7 +155,7 @@ async def extract_resume(file: UploadFile = File(...)):
 
     Returns:
         JSON object with nullable string fields:
-          skills, education, experience, projects, certifications, interests.
+          summary, education, skills, experience, projects, certifications, interests.
         Additional '_note' key when no text layer is found (scanned PDF).
 
     Raises:
@@ -189,6 +189,7 @@ async def extract_resume(file: UploadFile = File(...)):
     # OCR is not supported in this version.
     if not text.strip():
         return {
+            "summary": None,
             "skills": None,
             "education": None,
             "experience": None,

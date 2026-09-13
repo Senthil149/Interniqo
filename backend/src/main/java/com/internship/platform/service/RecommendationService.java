@@ -212,6 +212,7 @@ public class RecommendationService {
     private boolean hasProfileData(Student student) {
         return (student.getResumePath() != null && !student.getResumePath().isBlank())
                 || (student.getSkills() != null && !student.getSkills().isBlank())
+                || (student.getSummary() != null && !student.getSummary().isBlank())
                 || (student.getExperience() != null && !student.getExperience().isBlank())
                 || (student.getProjects() != null && !student.getProjects().isBlank())
                 || (student.getEducation() != null && !student.getEducation().isBlank());
@@ -219,6 +220,7 @@ public class RecommendationService {
 
     private String buildResumeRepresentation(Student student) {
         StringBuilder sb = new StringBuilder();
+        appendSection(sb, "Summary", student.getSummary());
         appendSection(sb, "Skills", student.getSkills());
         appendSection(sb, "Experience", student.getExperience());
         appendSection(sb, "Projects", student.getProjects());

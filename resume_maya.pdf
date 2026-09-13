@@ -1,0 +1,64 @@
+%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length 1104 >>
+stream
+BT
+/F1 12 Tf
+72 750 Td
+(CAREER OBJECTIVE) Tj
+0 -18 Td
+(Detail-oriented software engineer with internship experience seeking full-time roles in distributed backend engineering.) Tj
+0 -25 Td
+(TECHNICAL SKILLS) Tj
+0 -18 Td
+(Languages: C++, Rust, Python, SQL) Tj
+0 -18 Td
+(Technologies: Docker, gRPC, Redis, PostgreSQL) Tj
+0 -25 Td
+(PROJECTS) Tj
+0 -18 Td
+(High-Performance Key-Value Store in Rust) Tj
+0 -18 Td
+(Distributed Consensus Engine \(Raft implementation\)) Tj
+0 -25 Td
+(WORK EXPERIENCE) Tj
+0 -18 Td
+(Software Engineer Intern at Datadog - Optimized telemetry pipeline reducing CPU overhead by 20%.) Tj
+0 -18 Td
+(Wrote integration tools and automated tests.) Tj
+0 -25 Td
+(EDUCATION) Tj
+0 -18 Td
+(Massachusetts Institute of Technology \(MIT\) - B.S. in EECS, 2024) Tj
+0 -25 Td
+(INTERESTS & ACTIVITIES) Tj
+0 -18 Td
+(ACM Programming Competition Team Captain) Tj
+0 -18 Td
+(Rock Climbing and Bouldering Club organizer) Tj
+0 -18 Td
+(Amateur astrophotography) Tj
+0 -25 Td
+(CERTIFICATIONS & LICENSES) Tj
+0 -18 Td
+(HashiCorp Certified: Terraform Associate) Tj
+0 -18 Td
+(AWS Certified SysOps Administrator) Tj
+ET
+endstream
+endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000236 00000 n 
+0000000300 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+500
+%%EOF
