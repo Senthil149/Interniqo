@@ -7,6 +7,7 @@ import { issueCredential, getMyCredentials } from '../../api/credentials.js'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
 import { MotionButton } from '../../components/MotionButton.jsx'
 import Modal from '../../components/Modal.jsx'
+import CredentialQRCode from '../../components/CredentialQRCode.jsx'
 
 const STATUS_CONFIG = {
   APPLIED: {
@@ -457,13 +458,13 @@ export default function CompanyApplicationsPage() {
         title="Completion Credential Issued"
       >
         {credentialModalData && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="company-credential-modal">
             <div className="rounded-xl border border-success-200 bg-success-50 p-4 text-xs text-success-900 space-y-1">
               <p className="font-bold flex items-center gap-1.5 text-sm text-success-800">
                 <span>✅</span> Official Credential Created
               </p>
               <p className="text-success-700">
-                The completion credential has been securely issued and registered with an authentic verification record.
+                The completion credential has been securely issued and registered on the blockchain ledger.
               </p>
             </div>
 
@@ -492,11 +493,19 @@ export default function CompanyApplicationsPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <CredentialQRCode
+              credentialId={credentialModalData.credentialId}
+              size={180}
+              showDetails={true}
+              showCopy={true}
+              showDownload={true}
+            />
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setCredentialModalData(null)}
-                className="btn-secondary text-xs py-2 px-3"
+                className="btn-secondary text-xs py-2 px-3.5"
               >
                 Close
               </button>

@@ -13,6 +13,10 @@ import {
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
 import MotionButton from '../../components/MotionButton.jsx'
 import PreferencesModal from '../../components/PreferencesModal.jsx'
+import Modal from '../../components/Modal.jsx'
+import CredentialQRCode from '../../components/CredentialQRCode.jsx'
+import { getMyCredentials } from '../../api/credentials.js'
+import { Link } from 'react-router-dom'
 
 const MAX_RESUME_BYTES = 5 * 1024 * 1024 // 5 MB
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024 // 2 MB
@@ -27,6 +31,11 @@ export default function StudentProfilePage() {
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPrefModalOpen, setIsPrefModalOpen] = useState(false)
+
+  // Credentials state
+  const [credentials, setCredentials] = useState([])
+  const [activeCredModal, setActiveCredModal] = useState(null)
+  const [activeQrModal, setActiveQrModal] = useState(null)
 
   // Quick skill input state
   const [newSkillInput, setNewSkillInput] = useState('')
@@ -45,9 +54,10 @@ export default function StudentProfilePage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [profRes, prefRes] = await Promise.allSettled([
+      const [profRes, prefRes, credsRes] = await Promise.allSettled([
         getStudentProfile(),
         getStudentPreferences(),
+        getMyCredentials(),
       ])
 
       if (profRes.status === 'fulfilled') {
@@ -56,6 +66,9 @@ export default function StudentProfilePage() {
       }
       if (prefRes.status === 'fulfilled') {
         setPreferences(prefRes.value.data)
+      }
+      if (credsRes.status === 'fulfilled') {
+        setCredentials(credsRes.value.data || [])
       }
     } catch {
       showToast('Failed to load profile details.', 'error')
@@ -444,6 +457,69 @@ export default function StudentProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* ── Verified Blockchain Credentials Card ────────────────────── */}
+          {credentials && credentials.length > 0 && (
+            <div className="card-base p-6 space-y-4 border-emerald-200/80 bg-gradient-to-br from-white to-emerald-50/20 shadow-xs" data-testid="student-credentials-card">
+              <div className="flex items-center justify-between border-b border-warm-border pb-2.5">
+                <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-2">
+                  <span>🛡️</span>
+                  <span>Verified Credentials ({credentials.length})</span>
+                </h2>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                  ✓ Blockchain Verified
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {credentials.map((cred) => (
+                  <div
+                    key={cred.id}
+                    className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3"
+                    data-testid={`profile-credential-item-${cred.id}`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-900">{cred.internshipTitle}</h3>
+                        <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                          {cred.companyName} • Completed on {cred.completionDate}
+                        </p>
+                      </div>
+                      <span className="font-mono text-[11px] font-bold text-primary-800 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-200 self-start sm:self-auto select-all">
+                        {cred.credentialId}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setActiveCredModal(cred)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                        data-testid={`profile-view-cred-btn-${cred.id}`}
+                      >
+                        <svg className="w-3.5 h-3.5 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>View Credential</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveQrModal(cred)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
+                        data-testid={`profile-view-qr-btn-${cred.id}`}
+                      >
+                        <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        <span>Generate / View QR</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right 1 Column: Preferences & Resume */}
@@ -589,6 +665,132 @@ export default function StudentProfilePage() {
           showToast('Profile updated successfully!')
         }}
       />
+
+      {/* ── Student Profile Credential Details Modal ────────────────────── */}
+      <Modal
+        isOpen={Boolean(activeCredModal)}
+        onClose={() => setActiveCredModal(null)}
+        title="Verified Internship Credential"
+      >
+        {activeCredModal && (
+          <div className="space-y-4" data-testid="profile-credential-modal">
+            <div className="rounded-xl border border-success-200 bg-success-50 p-4 text-xs text-success-900 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-sm text-success-800">
+                <span>🛡️</span> Cryptographic Proof of Completion
+              </p>
+              <p className="text-success-700">
+                This credential was permanently registered and cryptographically verified on the blockchain smart contract.
+              </p>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-600 bg-warm-bg/60 p-4 rounded-xl border border-warm-border">
+              <div>
+                <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Role Title</span>
+                <span className="font-bold text-slate-900 text-sm">{activeCredModal.internshipTitle}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Issuing Organization</span>
+                <span className="font-medium text-slate-800">{activeCredModal.companyName}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Credential ID</span>
+                <span className="font-mono font-bold text-primary-800 bg-white px-2 py-1 rounded border border-slate-200 block mt-0.5 select-all">
+                  {activeCredModal.credentialId}
+                </span>
+              </div>
+              {activeCredModal.transactionHash && (
+                <div>
+                  <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Transaction Hash</span>
+                  <span className="font-mono text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 block mt-0.5 break-all select-all">
+                    {activeCredModal.transactionHash}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const cred = activeCredModal
+                  setActiveCredModal(null)
+                  setActiveQrModal(cred)
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-success-800 bg-success-50 border border-success-300 rounded-xl px-3 py-2 hover:bg-success-100 transition cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                <span>View QR Code</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCredModal(null)}
+                  className="btn-secondary text-xs py-2 px-3"
+                >
+                  Close
+                </button>
+                <Link
+                  to={`/verify-credential/${encodeURIComponent(activeCredModal.credentialId)}`}
+                  target="_blank"
+                  className="btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+                >
+                  <span>Public Verification Page</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Student Profile QR Code Modal ──────────────────────────────── */}
+      <Modal
+        isOpen={Boolean(activeQrModal)}
+        onClose={() => setActiveQrModal(null)}
+        title="Blockchain Credential QR Code"
+      >
+        {activeQrModal && (
+          <div className="space-y-4" data-testid="profile-qr-modal">
+            <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-3 text-xs text-primary-900 text-center">
+              <p className="font-bold text-sm text-primary-900">
+                {activeQrModal.internshipTitle}
+              </p>
+              <p className="text-primary-700 text-xs mt-0.5">
+                Issued by {activeQrModal.companyName} • ID: <span className="font-mono font-bold">{activeQrModal.credentialId}</span>
+              </p>
+            </div>
+
+            <CredentialQRCode
+              credentialId={activeQrModal.credentialId}
+              size={200}
+              showDetails={true}
+              showCopy={true}
+              showDownload={true}
+            />
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveQrModal(null)}
+                className="btn-secondary text-xs py-2 px-3.5"
+              >
+                Close
+              </button>
+              <Link
+                to={`/verify-credential/${encodeURIComponent(activeQrModal.credentialId)}`}
+                target="_blank"
+                className="btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+              >
+                <span>Open Verification Page</span>
+                <span>→</span>
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* ── Shared International Preferences Modal ──────────────────────── */}
       <PreferencesModal

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { verifyCredential } from '../api/credentials.js'
 import SkeletonLoader from '../components/SkeletonLoader.jsx'
 import { MotionButton } from '../components/MotionButton.jsx'
+import CredentialQRCode from '../components/CredentialQRCode.jsx'
 
 export default function VerifyCredentialPage() {
   const { credentialId: paramId } = useParams()
@@ -56,7 +57,7 @@ export default function VerifyCredentialPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 py-4 animate-fade-in">
+    <div className="mx-auto max-w-5xl space-y-8 py-4 animate-fade-in" data-testid="public-verify-container">
       {/* Header */}
       <div className="text-center space-y-3">
         <motion.div
@@ -65,13 +66,13 @@ export default function VerifyCredentialPage() {
           className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50/80 px-3.5 py-1 text-xs font-semibold text-primary-800 shadow-2xs"
         >
           <span className="flex h-2 w-2 rounded-full bg-primary-600 animate-pulse" />
-          <span>Instant Credential Verification</span>
+          <span>Instant Blockchain Credential Verification</span>
         </motion.div>
         <h1 className="font-heading text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
           Public Credential Verification
         </h1>
         <p className="mx-auto max-w-2xl text-sm text-slate-600 leading-relaxed">
-          Verify the authenticity, integrity, and official record of any internship certificate issued on Interniqo. No login required.
+          Verify the authenticity, integrity, and on-chain record of any internship credential issued on Interniqo. No login required.
         </p>
       </div>
 
@@ -92,15 +93,17 @@ export default function VerifyCredentialPage() {
               type="text"
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
-              placeholder="Enter Credential ID (e.g. CRED-A1B2C3D4E5F6)..."
+              placeholder="Enter Credential ID (e.g. CRED-861865365FF1)..."
               className="w-full rounded-xl border border-warm-border py-3 pl-11 pr-4 text-sm font-mono transition focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-2xs"
+              data-testid="credential-search-input"
             />
           </div>
           <MotionButton
             type="submit"
             disabled={loading || !inputVal.trim()}
-            className="btn-primary text-sm px-6 py-3 flex items-center justify-center gap-2 shrink-0"
+            className="btn-primary text-sm px-6 py-3 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             pulse={Boolean(inputVal.trim())}
+            data-testid="credential-search-btn"
           >
             {loading ? (
               <>
@@ -108,7 +111,7 @@ export default function VerifyCredentialPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z" />
                 </svg>
-                  <span>Verifying Credential…</span>
+                <span>Verifying Credential…</span>
               </>
             ) : (
               'Verify Credential'
@@ -125,6 +128,7 @@ export default function VerifyCredentialPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             className="rounded-2xl border border-danger-200 bg-danger-50 p-5 text-sm text-danger-700"
+            data-testid="verification-error-alert"
           >
             <p className="font-bold flex items-center gap-2">
               <span>⚠️</span> Verification Service Notice
@@ -134,9 +138,9 @@ export default function VerifyCredentialPage() {
         )}
       </AnimatePresence>
 
-      {/* Category 2: Content-shaped Skeleton Loading state */}
+      {/* Skeleton Loading state */}
       {loading && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="verification-loading-skeleton">
           <SkeletonLoader variant="detail-header" count={1} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SkeletonLoader variant="card" count={2} />
@@ -144,146 +148,216 @@ export default function VerifyCredentialPage() {
         </div>
       )}
 
-      {/* Category 6: Verification Results scale (0.95->1) + fade entrance */}
+      {/* Verification Results */}
       {result && !loading && (
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
+          initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
           className="space-y-6"
+          data-testid="verification-result-section"
         >
           {/* Status 1: VERIFIED */}
           {result.status === 'VERIFIED' && (
-            <div className="overflow-hidden rounded-3xl border-2 border-emerald-500/30 bg-white shadow-xl">
-              {/* Green Header Banner */}
-              <div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-6 text-white">
+            <div
+              className="overflow-hidden rounded-3xl border-2 border-emerald-500/30 bg-white shadow-xl"
+              data-testid="credential-verified-card"
+            >
+              {/* Header Banner */}
+              <div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 sm:px-8 py-6 text-white">
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-white/20 p-2.5 backdrop-blur-xs shadow-inner">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-3.5">
+                    <div className="rounded-2xl bg-white/20 p-3 backdrop-blur-xs shadow-inner">
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
                     <div>
-                      <span className="inline-block rounded-full bg-white/25 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider">
-                        Cryptographically Verified
-                      </span>
-                      <h2 className="font-heading text-2xl font-bold mt-1">
-                        Authentic Internship Credential
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/25 px-3 py-0.5 text-xs font-bold uppercase tracking-wider"
+                          data-testid="verify-status-badge"
+                        >
+                          <span>✓</span>
+                          <span>Credential Verified</span>
+                        </span>
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-100"
+                          data-testid="blockchain-record-badge"
+                        >
+                          <span>✓</span>
+                          <span>Blockchain Record Valid</span>
+                        </span>
+                      </div>
+                      <h2 className="font-heading text-2xl sm:text-3xl font-extrabold mt-1.5 text-white">
+                        Interniqo Blockchain Credential
                       </h2>
                     </div>
                   </div>
 
                   {/* Stamp */}
-                  <div className="rounded-xl border border-white/30 bg-white/10 px-3.5 py-1.5 text-center text-xs backdrop-blur-xs">
-                    <div className="font-bold uppercase tracking-wider text-[10px] text-emerald-100">Status</div>
-                    <div className="font-bold text-white">OFFICIALLY VERIFIED</div>
+                  <div className="rounded-xl border border-white/30 bg-white/10 px-4 py-2 text-center text-xs backdrop-blur-xs shrink-0">
+                    <div className="font-bold uppercase tracking-wider text-[10px] text-emerald-200">Integrity Status</div>
+                    <div className="font-bold text-white text-sm" data-testid="verified-stamp">✓ OFFICIALLY VERIFIED</div>
                   </div>
                 </div>
               </div>
 
               {/* Certificate Details Body */}
               <div className="p-6 sm:p-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100">
-                    <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                      Student Recipient
-                    </h3>
-                    <p className="mt-1 font-heading text-lg font-bold text-slate-900">
-                      {result.platformRecord?.studentName || 'Recipient'}
-                    </p>
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  {/* Left 2 Cols: Recipient & Position Info */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/70">
+                        <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
+                          Student Recipient
+                        </h3>
+                        <p
+                          className="mt-1 font-heading text-lg font-bold text-slate-900"
+                          data-testid="verified-student-name"
+                        >
+                          {result.platformRecord?.studentName || 'Authorized Recipient'}
+                        </p>
+                      </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100">
-                    <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                      Issuing Company
-                    </h3>
-                    <p className="mt-1 font-heading text-lg font-bold text-slate-900">
-                      {result.platformRecord?.companyName || result.onChainRecord?.issuer || 'Issuer'}
-                    </p>
-                  </div>
+                      <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/70">
+                        <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
+                          Issuing Company
+                        </h3>
+                        <p
+                          className="mt-1 font-heading text-lg font-bold text-slate-900"
+                          data-testid="verified-company-name"
+                        >
+                          {result.platformRecord?.companyName || result.onChainRecord?.issuer || 'Issuing Entity'}
+                        </p>
+                      </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100">
-                    <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                      Internship Position
-                    </h3>
-                    <p className="mt-1 text-base font-semibold text-slate-800">
-                      {result.platformRecord?.internshipTitle || 'Internship Program'}
-                    </p>
-                  </div>
+                      <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/70">
+                        <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
+                          Internship Position
+                        </h3>
+                        <p
+                          className="mt-1 text-base font-semibold text-slate-800"
+                          data-testid="verified-internship-title"
+                        >
+                          {result.platformRecord?.internshipTitle || 'Internship Program'}
+                        </p>
+                      </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100">
-                    <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                      Completion Record Date
-                    </h3>
-                    <p className="mt-1 text-base font-medium text-slate-700">
-                      {result.platformRecord?.completionDate || 'Recorded'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Blockchain Proof Card */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 sm:p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                        Digital Verification Proof
-                      </h4>
-                    </div>
-                    <span className="rounded-full bg-slate-200/80 px-3 py-0.5 text-xs font-mono font-medium text-slate-700">
-                      Registry: {result.onChainRecord?.network || 'Verified Ledger'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <span className="text-slate-500 font-medium">Credential ID:</span>
-                      <p className="font-mono font-bold text-slate-900 mt-0.5 text-sm">{result.credentialId}</p>
+                      <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/70">
+                        <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
+                          Completion Date
+                        </h3>
+                        <p
+                          className="mt-1 text-base font-medium text-slate-700"
+                          data-testid="verified-completion-date"
+                        >
+                          {result.platformRecord?.completionDate || 'Recorded on Chain'}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="text-slate-500 font-medium">Canonical SHA-256 Hash:</span>
-                      <p className="font-mono text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 break-all mt-1">
-                        {result.onChainRecord?.credentialHash}
+                    {/* Blockchain Technical Proof Box */}
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 space-y-3.5 text-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <h4 className="font-bold uppercase tracking-wider text-slate-800 text-xs">
+                            Blockchain Cryptographic Proof
+                          </h4>
+                        </div>
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 font-semibold text-[11px]">
+                          ✓ Blockchain Status: Verified
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-slate-500 font-medium">Credential ID:</span>
+                          <p
+                            className="font-mono font-bold text-slate-900 mt-0.5 text-sm select-all"
+                            data-testid="verified-credential-id"
+                          >
+                            {result.credentialId}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 font-medium">Blockchain Network:</span>
+                          <p className="font-mono text-slate-800 mt-0.5 font-semibold">
+                            {result.onChainRecord?.network || 'hardhat-local'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-slate-500 font-medium">Canonical SHA-256 Hash:</span>
+                        <p
+                          className="font-mono text-emerald-900 bg-emerald-50/90 border border-emerald-200 rounded-xl p-2.5 break-all mt-1 select-all"
+                          data-testid="verified-sha256-hash"
+                        >
+                          {result.onChainRecord?.credentialHash}
+                        </p>
+                      </div>
+
+                      {result.platformRecord?.transactionHash && (
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium">Transaction Hash:</span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(result.platformRecord.transactionHash)}
+                              className="text-primary-700 hover:text-primary-900 text-[11px] font-semibold transition cursor-pointer"
+                            >
+                              {copiedTx ? '✓ Copied Hash' : 'Copy Hash'}
+                            </button>
+                          </div>
+                          <p
+                            className="font-mono text-slate-800 bg-white border border-slate-200 rounded-xl p-2.5 break-all mt-1 select-all"
+                            data-testid="verified-tx-hash"
+                          >
+                            {result.platformRecord.transactionHash}
+                          </p>
+                        </div>
+                      )}
+
+                      {result.onChainRecord?.contractAddress && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Smart Contract Registry:</span>
+                          <p className="font-mono text-slate-700 bg-white border border-slate-200 rounded-xl p-2.5 break-all mt-1 select-all">
+                            {result.onChainRecord.contractAddress}
+                          </p>
+                        </div>
+                      )}
+
+                      {result.onChainRecord?.timestamp && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Recorded On-Chain Timestamp:</span>
+                          <p className="text-slate-700 font-medium mt-0.5">
+                            {new Date(result.onChainRecord.timestamp).toUTCString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Accurate Blockchain Disclaimer */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-100/60 p-3.5 text-[11px] text-slate-500 leading-relaxed">
+                      <p className="font-semibold text-slate-700">Verification Boundary & Authenticity Scope:</p>
+                      <p className="mt-0.5">
+                        This verification proves that an authentic credential record with this unique identifier and cryptographic hash was issued by the platform and registered on the blockchain smart contract. The blockchain guarantees cryptographic existence and tamper-evidence of the recorded fields.
                       </p>
                     </div>
+                  </div>
 
-                    {result.platformRecord?.transactionHash && (
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500 font-medium">Transaction Hash:</span>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(result.platformRecord.transactionHash)}
-                            className="text-blue-600 hover:text-blue-800 text-[11px] font-semibold transition cursor-pointer"
-                          >
-                            {copiedTx ? '✓ Copied to Clipboard' : 'Copy Hash'}
-                          </button>
-                        </div>
-                        <p className="font-mono text-slate-800 bg-white border border-slate-200 rounded-xl p-2.5 break-all mt-1">
-                          {result.platformRecord.transactionHash}
-                        </p>
-                      </div>
-                    )}
-
-                    {result.onChainRecord?.contractAddress && (
-                      <div>
-                        <span className="text-slate-500 font-medium">Registry Contract:</span>
-                        <p className="font-mono text-slate-700 bg-white border border-slate-200 rounded-xl p-2.5 break-all mt-1">
-                          {result.onChainRecord.contractAddress}
-                        </p>
-                      </div>
-                    )}
-
-                    {result.onChainRecord?.timestamp && (
-                      <div>
-                        <span className="text-slate-500 font-medium">Verification Timestamp:</span>
-                        <p className="text-slate-700 font-medium mt-1">
-                          {new Date(result.onChainRecord.timestamp).toUTCString()}
-                        </p>
-                      </div>
-                    )}
+                  {/* Right Col: Embedded Scannable QR Code */}
+                  <div className="lg:col-span-1 space-y-4">
+                    <CredentialQRCode
+                      credentialId={result.credentialId}
+                      size={190}
+                      showDetails={true}
+                      showCopy={true}
+                      showDownload={true}
+                    />
                   </div>
                 </div>
               </div>
@@ -292,17 +366,20 @@ export default function VerifyCredentialPage() {
 
           {/* Status 2: MISMATCH */}
           {result.status === 'MISMATCH' && (
-            <div className="overflow-hidden rounded-3xl border border-rose-300 bg-white shadow-lg">
+            <div
+              className="overflow-hidden rounded-3xl border border-rose-300 bg-white shadow-lg"
+              data-testid="credential-mismatch-card"
+            >
               <div className="border-b border-rose-200 bg-rose-600 px-6 py-5 text-white">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-white/20 p-2.5 backdrop-blur-xs">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div>
                     <span className="inline-block rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider">
-                      Verification Failed
+                      ✕ Credential Verification Failed
                     </span>
                     <h2 className="font-heading text-xl font-bold mt-0.5">Cryptographic Hash Mismatch</h2>
                   </div>
@@ -335,18 +412,24 @@ export default function VerifyCredentialPage() {
 
           {/* Status 3: NOT_FOUND */}
           {result.status === 'NOT_FOUND' && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xs">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <div
+              className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xs"
+              data-testid="credential-notfound-card"
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
-              <h2 className="font-heading mt-4 text-lg font-bold text-slate-900">Credential Not Found</h2>
-              <p className="mt-1 text-sm text-slate-500 max-w-md mx-auto">
-                {result.message}
+              <div className="mt-3 inline-block rounded-full bg-rose-100 text-rose-800 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
+                ✕ Credential Not Found
+              </div>
+              <h2 className="font-heading mt-2 text-xl font-bold text-slate-900">Credential Not Found</h2>
+              <p className="mt-1 text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                {result.message || 'This credential identifier could not be located on the blockchain registry or platform database. Please confirm the credential ID or contact the issuing organization.'}
               </p>
               <p className="mt-3 text-xs text-slate-400">
-                Queried ID: <span className="font-mono font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{result.credentialId}</span>
+                Queried ID: <span className="font-mono font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded select-all" data-testid="queried-credential-id">{result.credentialId || inputVal}</span>
               </p>
             </div>
           )}

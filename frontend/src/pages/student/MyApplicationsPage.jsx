@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getApplications } from '../../api/applications.js'
 import { getMyCredentials } from '../../api/credentials.js'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
-import Modal from '../../components/Modal.jsx'
 import { MotionButton } from '../../components/MotionButton.jsx'
+import Modal from '../../components/Modal.jsx'
+import CredentialQRCode from '../../components/CredentialQRCode.jsx'
 
 const STATUS_CONFIG = {
   APPLIED: {
@@ -109,6 +110,7 @@ export default function MyApplicationsPage() {
   const [error, setError] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [activeCredentialModal, setActiveCredentialModal] = useState(null)
+  const [activeQrModal, setActiveQrModal] = useState(null)
 
   useEffect(() => {
     loadApplications()
@@ -285,22 +287,39 @@ export default function MyApplicationsPage() {
                       {config.description}
                     </p>
 
-                    {/* Blockchain Credential Link if Issued (Category 6: Credential Result Dialog) */}
+                    {/* Blockchain Credential Link if Issued */}
                     {credentialsMap[app.internshipId] && (
-                      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                        <MotionButton
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                        <button
                           type="button"
                           onClick={() => setActiveCredentialModal({
                             ...credentialsMap[app.internshipId],
                             internshipTitle: app.internshipTitle,
                             companyName: app.companyName,
                           })}
-                          className="inline-flex items-center gap-2 rounded-xl bg-success-50 border border-success-300 px-4 py-2 text-xs font-bold text-success-800 shadow-xs hover:bg-success-100 transition cursor-pointer"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100/90 border border-slate-300 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200/80 hover:text-slate-900 transition cursor-pointer shadow-2xs"
+                          data-testid={`view-credential-btn-${app.id}`}
+                        >
+                          <svg className="w-4 h-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>View Credential</span>
+                        </button>
+
+                        <MotionButton
+                          type="button"
+                          onClick={() => setActiveQrModal({
+                            ...credentialsMap[app.internshipId],
+                            internshipTitle: app.internshipTitle,
+                            companyName: app.companyName,
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-success-50 border border-success-300 px-3.5 py-2 text-xs font-bold text-success-800 hover:bg-success-100 transition cursor-pointer shadow-2xs"
+                          data-testid={`view-qr-btn-${app.id}`}
                         >
                           <svg className="w-4 h-4 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                           </svg>
-                          <span>View Verified Credential ({credentialsMap[app.internshipId].credentialId}) →</span>
+                          <span>Generate / View QR</span>
                         </MotionButton>
                       </div>
                     )}
@@ -337,14 +356,14 @@ export default function MyApplicationsPage() {
         </motion.div>
       )}
 
-      {/* Category 6: Credential Result Dialog Modal with scale 0.9->1 and fade entrance */}
+      {/* Credential Result Dialog Modal */}
       <Modal
         isOpen={Boolean(activeCredentialModal)}
         onClose={() => setActiveCredentialModal(null)}
         title="Verified Internship Credential"
       >
         {activeCredentialModal && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="student-credential-modal">
             <div className="rounded-xl border border-success-200 bg-success-50 p-4 text-xs text-success-900 space-y-1">
               <p className="font-bold flex items-center gap-1.5 text-sm text-success-800">
                 <span>🛡️</span> Verified Completion Credential
@@ -379,20 +398,86 @@ export default function MyApplicationsPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setActiveCredentialModal(null)}
-                className="btn-secondary text-xs py-2 px-3"
+                onClick={() => {
+                  const cred = activeCredentialModal
+                  setActiveCredentialModal(null)
+                  setActiveQrModal(cred)
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-success-800 bg-success-50 border border-success-300 rounded-xl px-3 py-2 hover:bg-success-100 transition cursor-pointer"
+                data-testid="switch-to-qr-btn"
+              >
+                <svg className="w-3.5 h-3.5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                <span>View QR Code</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCredentialModal(null)}
+                  className="btn-secondary text-xs py-2 px-3"
+                >
+                  Close
+                </button>
+                <Link
+                  to={`/verify-credential/${encodeURIComponent(activeCredentialModal.credentialId)}`}
+                  target="_blank"
+                  className="btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+                >
+                  <span>Public Verification Page</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Dedicated Blockchain Credential QR Code Modal */}
+      <Modal
+        isOpen={Boolean(activeQrModal)}
+        onClose={() => setActiveQrModal(null)}
+        title="Blockchain Credential QR Code"
+      >
+        {activeQrModal && (
+          <div className="space-y-4" data-testid="student-qr-modal">
+            <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-3 text-xs text-primary-900">
+              <p className="font-bold text-sm text-primary-900">
+                {activeQrModal.internshipTitle}
+              </p>
+              <p className="text-primary-700 text-xs mt-0.5">
+                Issued by {activeQrModal.companyName} • ID: <span className="font-mono font-bold">{activeQrModal.credentialId}</span>
+              </p>
+            </div>
+
+            <CredentialQRCode
+              credentialId={activeQrModal.credentialId}
+              size={200}
+              showDetails={true}
+              showCopy={true}
+              showDownload={true}
+            />
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveQrModal(null)}
+                className="btn-secondary text-xs py-2 px-3.5"
+                data-testid="close-qr-modal-btn"
               >
                 Close
               </button>
               <Link
-                to={`/verify-credential/${encodeURIComponent(activeCredentialModal.credentialId)}`}
+                to={`/verify-credential/${encodeURIComponent(activeQrModal.credentialId)}`}
                 target="_blank"
                 className="btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+                data-testid="open-verify-from-modal-btn"
               >
-                <span>Public Verification Page</span>
+                <span>Open Verification Page</span>
                 <span>→</span>
               </Link>
             </div>
@@ -402,3 +487,4 @@ export default function MyApplicationsPage() {
     </div>
   )
 }
+

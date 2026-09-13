@@ -204,8 +204,20 @@ public class CredentialService {
         PublicVerifyResponse response = new PublicVerifyResponse();
         response.setCredentialId(cleanId);
 
-        // 1. Query database record
+        // 1. Query database record (by platform credentialId, with fallback to numeric ID)
         Optional<Credential> dbCredentialOpt = credentialRepository.findByCredentialId(cleanId);
+        if (dbCredentialOpt.isEmpty()) {
+            try {
+                Long numId = Long.parseLong(cleanId);
+                Optional<Credential> byNumericId = credentialRepository.findById(numId);
+                if (byNumericId.isPresent()) {
+                    dbCredentialOpt = byNumericId;
+                    cleanId = byNumericId.get().getCredentialId();
+                    response.setCredentialId(cleanId);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
 
         // 2. Query blockchain ledger
         BlockchainService.OnChainRecord onChain = blockchainService.verifyCredentialOnChain(cleanId);
