@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { resendCode } from '../api/auth.js'
+import AnimatedInput from '../components/AnimatedInput.jsx'
+import { MotionButton } from '../components/MotionButton.jsx'
 
 function RegisterPage() {
   const { register, verifyCode, isAuthenticated } = useAuth()
@@ -115,12 +118,16 @@ function RegisterPage() {
     }
   }
 
-  // STEP 2: In-flow 6-digit code verification view
+  // STEP 2: In-flow 6-digit code verification view (Category 6: scale 0.9->1 and fade entrance)
   if (step === 'VERIFY') {
     return (
       <div className="mx-auto max-w-md space-y-6 py-6 animate-fade-in">
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-xs ring-1 ring-blue-100 mb-3">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-2"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-700 shadow-xs ring-1 ring-primary-100 mb-3">
             <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -138,27 +145,41 @@ function RegisterPage() {
           <p className="text-xs text-slate-400">
             Please enter the code below to activate your account.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="card-base p-6 sm:p-8 space-y-5 shadow-sm">
-          {verifyError && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 flex items-start gap-2.5 animate-scale-in">
-              <span className="text-rose-500 font-bold">⚠️</span>
-              <span>{verifyError}</span>
-            </div>
-          )}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="card-base p-6 sm:p-8 space-y-5 shadow-sm"
+        >
+          <AnimatePresence>
+            {verifyError && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-2xl border border-danger-200 bg-danger-50 p-3.5 text-xs text-danger-700 flex items-start gap-2.5"
+              >
+                <span className="text-danger-500 font-bold">⚠️</span>
+                <span>{verifyError}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {resendStatus && (
-            <div
-              className={`rounded-2xl border p-3.5 text-xs flex items-start gap-2.5 animate-scale-in ${
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-2xl border p-3.5 text-xs flex items-start gap-2.5 ${
                 resendStatus.type === 'success'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                  : 'border-rose-200 bg-rose-50 text-rose-700'
+                  ? 'border-success-200 bg-success-50 text-success-800'
+                  : 'border-danger-200 bg-danger-50 text-danger-700'
               }`}
             >
               <span>{resendStatus.type === 'success' ? '✅' : '⚠️'}</span>
               <span>{resendStatus.text}</span>
-            </div>
+            </motion.div>
           )}
 
           <form className="space-y-5" onSubmit={handleVerifySubmit}>
@@ -166,35 +187,41 @@ function RegisterPage() {
               <label htmlFor="verification-code-input" className="block text-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 6-Digit Verification Code
               </label>
-              <input
-                id="verification-code-input"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                autoFocus
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6)
-                  setCode(val)
-                  if (verifyError) setVerifyError('')
-                }}
-                placeholder="••••••"
-                className="w-full text-center font-mono text-3xl font-bold tracking-[0.4em] py-3.5 rounded-xl border border-slate-300 bg-slate-50/50 text-slate-900 transition focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-inner placeholder:text-slate-300"
-              />
+              <motion.div
+                animate={verifyError ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+              >
+                <input
+                  id="verification-code-input"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoFocus
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    setCode(val)
+                    if (verifyError) setVerifyError('')
+                  }}
+                  placeholder="••••••"
+                  className="w-full text-center font-mono text-3xl font-bold tracking-[0.4em] py-3.5 rounded-xl border border-warm-border bg-slate-50/50 text-slate-900 transition focus:border-primary-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-inner placeholder:text-slate-300"
+                />
+              </motion.div>
               <p className="mt-2 text-center text-xs text-slate-400">
                 Code expires in 10 minutes.
               </p>
             </div>
 
-            <button
+            <MotionButton
               type="submit"
               disabled={verifying || code.trim().length !== 6}
               className="btn-primary w-full py-3 text-sm"
+              pulse={code.trim().length === 6}
             >
               {verifying ? 'Activating Account…' : 'Verify & Activate Account'}
-            </button>
+            </MotionButton>
           </form>
 
           {/* Resend code section with cooldown */}
@@ -207,7 +234,7 @@ function RegisterPage() {
               className={`text-xs font-bold transition cursor-pointer ${
                 resendCooldown > 0
                   ? 'text-slate-400 cursor-not-allowed'
-                  : 'text-blue-600 hover:text-blue-800 underline'
+                  : 'text-primary-700 hover:text-primary-900 underline'
               }`}
             >
               {resendCooldown > 0
@@ -216,9 +243,9 @@ function RegisterPage() {
             </button>
           </div>
 
-          {/* Design Rule #4 Disclaimer */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-500 leading-relaxed text-center">
-            <span className="font-semibold text-slate-700">Notice (Design Rule #4):</span> Email verification confirms control of this email address only. It does not certify legal company incorporation or academic standing.
+          {/* Verification Disclaimer */}
+          <div className="rounded-xl border border-warm-border bg-warm-bg/50 p-3 text-[11px] text-slate-500 leading-relaxed text-center">
+            <span className="font-semibold text-slate-700">Notice:</span> Email verification confirms control of this email address only. It does not certify legal company incorporation or academic standing.
           </div>
 
           <div className="text-center pt-1">
@@ -234,7 +261,7 @@ function RegisterPage() {
               ← Change email address or details
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     )
   }
@@ -243,11 +270,16 @@ function RegisterPage() {
   return (
     <div className="mx-auto max-w-md space-y-6 py-6 animate-fade-in">
       <div className="text-center space-y-2">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm mb-3">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 text-white shadow-sm mb-3"
+        >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
           </svg>
-        </div>
+        </motion.div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
           Create an Account
         </h1>
@@ -256,62 +288,65 @@ function RegisterPage() {
         </p>
       </div>
 
-      <div className="card-base p-6 sm:p-8 shadow-sm">
+      <motion.div
+        animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="card-base p-6 sm:p-8 shadow-sm"
+      >
         <form className="space-y-4" onSubmit={handleRegisterSubmit}>
-          {error && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-scale-in">
-              {error}
-            </div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="rounded-xl border border-danger-200 bg-danger-50 p-3.5 text-xs text-danger-700"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Full Name
-            </label>
-            <input
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              placeholder="e.g. Maya Lin"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
+          <AnimatedInput
+            id="register-name"
+            name="name"
+            label="Full Name"
+            placeholder="e.g. Maya Lin"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Email Address
-            </label>
-            <input
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              type="email"
-              placeholder="e.g. maya.lin@stanford.edu"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+          <AnimatedInput
+            id="register-email"
+            name="email"
+            type="email"
+            label="Email Address"
+            placeholder="e.g. maya.lin@stanford.edu"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Password
-            </label>
-            <input
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              type="password"
-              minLength={8}
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+          <AnimatedInput
+            id="register-password"
+            name="password"
+            type="password"
+            label="Password"
+            placeholder="At least 8 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+          />
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+          <div className="space-y-1.5">
+            <label htmlFor="account-role-select" className="block text-xs font-semibold uppercase tracking-wide text-slate-600">
               Account Role
             </label>
             <select
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              id="account-role-select"
+              className="input-field border-warm-border focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -320,54 +355,59 @@ function RegisterPage() {
             </select>
           </div>
 
-          {role === 'COMPANY' && (
-            <div className="space-y-4 pt-2 border-t border-slate-100">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Company / Organization Name
-                </label>
-                <input
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          <AnimatePresence>
+            {role === 'COMPANY' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4 pt-2 border-t border-slate-100 overflow-hidden"
+              >
+                <AnimatedInput
+                  id="company-name"
+                  name="companyName"
+                  label="Company / Organization Name"
                   placeholder="e.g. Quantum Leap Technologies"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   required
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Company Website <span className="text-xs text-slate-400 font-normal lowercase">(optional)</span>
-                </label>
-                <input
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  placeholder="e.g. https://quantumleap.tech"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                />
-                <span className="mt-1 block text-xs text-slate-500">
-                  If provided, we verify whether your work email domain matches your company website host.
-                </span>
-              </div>
-            </div>
-          )}
+                <div className="space-y-1">
+                  <AnimatedInput
+                    id="company-website"
+                    name="website"
+                    label="Company Website (Optional)"
+                    placeholder="e.g. https://quantumleap.tech"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                  />
+                  <span className="block text-xs text-slate-500">
+                    If provided, we verify whether your work email domain matches your company website host.
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <button
+          <MotionButton
             className="btn-primary w-full py-2.5 text-sm mt-2"
             type="submit"
             disabled={submitting}
+            pulse={false}
           >
             {submitting ? 'Sending verification code…' : 'Register & Get Code'}
-          </button>
+          </MotionButton>
         </form>
 
         <p className="mt-6 pt-4 text-center text-xs text-slate-500 border-t border-slate-100">
           Already registered?{' '}
-          <Link className="font-bold text-blue-600 hover:text-blue-800 transition" to="/login">
+          <Link className="font-bold text-primary-700 hover:text-primary-900 transition" to="/login">
             Sign in →
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }

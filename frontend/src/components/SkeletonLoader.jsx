@@ -2,7 +2,7 @@
  * Reusable Skeleton Loader Component
  * Replaces blank spinners with subtle animated shimmering placeholder structures.
  */
-export default function SkeletonLoader({ variant = 'card', count = 1, className = '' }) {
+export default function SkeletonLoader({ variant = 'card', count = 1, className = '', columns = 5 }) {
   const items = Array.from({ length: count }, (_, i) => i)
 
   if (variant === 'metric') {
@@ -27,24 +27,38 @@ export default function SkeletonLoader({ variant = 'card', count = 1, className 
       <tbody className={className}>
         {items.map((i) => (
           <tr key={i} className="border-b border-slate-100">
-            <td className="p-4">
-              <div className="h-4 w-32 rounded bg-slate-200 animate-pulse" />
-            </td>
-            <td className="p-4">
-              <div className="h-4 w-24 rounded bg-slate-200 animate-pulse" />
-            </td>
-            <td className="p-4">
-              <div className="h-4 w-20 rounded bg-slate-200 animate-pulse" />
-            </td>
-            <td className="p-4">
-              <div className="h-4 w-16 rounded bg-slate-200 animate-pulse" />
-            </td>
-            <td className="p-4 text-right">
-              <div className="ml-auto h-7 w-20 rounded-lg bg-slate-200 animate-pulse" />
-            </td>
+            {Array.from({ length: columns }, (_, c) => (
+              <td key={c} className="p-4">
+                <div
+                  className={`h-4 rounded bg-slate-200 animate-pulse ${
+                    c === 0 ? 'w-12' : c === 1 ? 'w-40' : c === columns - 1 ? 'w-20 ml-auto' : 'w-28'
+                  }`}
+                />
+              </td>
+            ))}
           </tr>
         ))}
       </tbody>
+    )
+  }
+
+  if (variant === 'table-block') {
+    return (
+      <div className={`overflow-hidden rounded-2xl border border-warm-border bg-white shadow-xs animate-pulse p-4 space-y-4 ${className}`}>
+        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+          <div className="h-5 w-36 rounded bg-slate-200" />
+          <div className="h-8 w-24 rounded bg-slate-100" />
+        </div>
+        {items.map((i) => (
+          <div key={i} className="flex items-center justify-between py-3 border-b border-slate-50 gap-4">
+            <div className="h-4 w-12 rounded bg-slate-200" />
+            <div className="h-4 w-36 rounded bg-slate-200 flex-1" />
+            <div className="h-4 w-24 rounded bg-slate-100 hidden sm:block" />
+            <div className="h-4 w-20 rounded bg-slate-200" />
+            <div className="h-7 w-20 rounded-lg bg-slate-200" />
+          </div>
+        ))}
+      </div>
     )
   }
 
@@ -95,3 +109,4 @@ export default function SkeletonLoader({ variant = 'card', count = 1, className 
     </div>
   )
 }
+

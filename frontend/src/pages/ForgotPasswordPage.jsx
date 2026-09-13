@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { forgotPassword, resetPassword } from '../api/auth.js'
+import AnimatedInput from '../components/AnimatedInput.jsx'
+import { MotionButton } from '../components/MotionButton.jsx'
 
 export default function ForgotPasswordPage() {
   // Steps: 'EMAIL' | 'RESET' | 'SUCCESS'
@@ -100,21 +103,25 @@ export default function ForgotPasswordPage() {
       const { data } = await forgotPassword(email.trim().toLowerCase())
       setResendMessage({
         type: 'success',
-        text: data?.message || 'A new 6-digit reset code has been sent to your email.',
+        text: data?.message || 'A fresh 6-digit reset code has been sent to your email.',
       })
       setResendCooldown(60)
     } catch (err) {
       setResendMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Unable to resend code. Please wait a moment.',
+        text: err.response?.data?.message || err.response?.data?.error || 'Unable to resend code.',
       })
     }
   }
 
   return (
-    <section className="mx-auto max-w-md space-y-6 animate-fade-in-up">
-      <div className="text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 shadow-xs">
+    <section className="mx-auto max-w-md py-8 animate-fade-in-up">
+      <div className="text-center mb-6">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-700 ring-1 ring-primary-100 shadow-xs"
+        >
           <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -123,8 +130,8 @@ export default function ForgotPasswordPage() {
               d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
             />
           </svg>
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-display">
+        </motion.div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">
           {step === 'SUCCESS' ? 'Password Updated' : 'Reset your password'}
         </h1>
         <p className="mt-1.5 text-sm text-slate-600">
@@ -134,148 +141,182 @@ export default function ForgotPasswordPage() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+      <motion.div
+        animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="rounded-2xl border border-warm-border bg-white p-6 sm:p-8 shadow-sm"
+      >
         {/* SUCCESS VIEW */}
         {step === 'SUCCESS' && (
-          <div className="space-y-5 text-center animate-scale-in">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 shadow-xs">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="space-y-5 text-center"
+          >
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-success-50 text-success-700 ring-1 ring-success-100 shadow-xs">
               <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div className="space-y-1">
-              <p className="font-semibold text-slate-900 font-display">All set!</p>
+              <p className="font-semibold text-slate-900 font-heading">All set!</p>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Your password has been changed. You can now sign in with your new password.
               </p>
             </div>
             <Link
               to="/login"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-primary-700 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-primary-800 hover:shadow-md hover:-translate-y-0.5 active:bg-primary-900"
             >
               Sign in to your account
             </Link>
-          </div>
+          </motion.div>
         )}
 
         {/* STEP 1: ENTER EMAIL */}
         {step === 'EMAIL' && (
           <form className="space-y-4" onSubmit={handleSendCode}>
-            {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 animate-scale-in">
-                {error}
-              </div>
-            ) : null}
+            <AnimatePresence>
+              {error ? (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="rounded-xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700"
+                >
+                  {error}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
-            <label className="block text-sm font-medium text-slate-700">
-              Email address
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
-                type="email"
-                required
-                autoFocus
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
+            <AnimatedInput
+              id="reset-email-input"
+              name="email"
+              type="email"
+              label="Email address"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+            />
 
-            <button
-              className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800 disabled:opacity-60 disabled:hover:translate-y-0"
+            <MotionButton
+              className="btn-primary w-full py-2.5 text-sm"
               type="submit"
               disabled={submitting || !email.trim()}
+              pulse={false}
             >
               {submitting ? 'Sending code…' : 'Send Reset Code'}
-            </button>
+            </MotionButton>
 
             <div className="pt-2 text-center">
-              <Link to="/login" className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition">
+              <Link to="/login" className="text-xs font-semibold text-slate-600 hover:text-primary-700 transition">
                 ← Return to Sign in
               </Link>
             </div>
           </form>
         )}
 
-        {/* STEP 2: ENTER 6-DIGIT CODE + NEW PASSWORD */}
+        {/* STEP 2: ENTER 6-DIGIT CODE + NEW PASSWORD (Category 6: scale 0.9->1 entrance) */}
         {step === 'RESET' && (
-          <form className="space-y-4" onSubmit={handleResetPassword}>
-            {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-scale-in">
-                {error}
-              </div>
-            ) : null}
+          <motion.form
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="space-y-4"
+            onSubmit={handleResetPassword}
+          >
+            <AnimatePresence>
+              {error ? (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="rounded-xl border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700"
+                >
+                  {error}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             {resendMessage ? (
-              <div
-                className={`rounded-xl border p-3 text-xs animate-scale-in ${
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-xl border p-3 text-xs ${
                   resendMessage.type === 'success'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                    : 'border-rose-200 bg-rose-50 text-rose-700'
+                    ? 'border-success-200 bg-success-50 text-success-800'
+                    : 'border-danger-200 bg-danger-50 text-danger-700'
                 }`}
               >
                 {resendMessage.text}
-              </div>
+              </motion.div>
             ) : null}
 
             <div>
               <label htmlFor="reset-code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 font-mono">
                 6-Digit Reset Code
               </label>
-              <input
-                id="reset-code-input"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                autoFocus
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6)
-                  setCode(val)
-                  if (error) setError(null)
-                }}
-                placeholder="••••••"
-                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-inner placeholder:text-slate-300"
-              />
+              <motion.div
+                animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+              >
+                <input
+                  id="reset-code-input"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoFocus
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    setCode(val)
+                    if (error) setError(null)
+                  }}
+                  placeholder="••••••"
+                  className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-warm-border focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition shadow-inner placeholder:text-slate-300"
+                />
+              </motion.div>
               <p className="mt-1 text-center text-[11px] text-slate-400">
                 Code expires in 10 minutes.
               </p>
             </div>
 
-            <label className="block text-sm font-medium text-slate-700">
-              New Password
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
-                type="password"
-                minLength={8}
-                required
-                placeholder="At least 8 characters"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </label>
+            <AnimatedInput
+              id="new-password-input"
+              name="newPassword"
+              type="password"
+              label="New Password"
+              placeholder="At least 8 characters"
+              minLength={8}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
 
-            <label className="block text-sm font-medium text-slate-700">
-              Confirm New Password
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
-                type="password"
-                minLength={8}
-                required
-                placeholder="Re-enter your new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </label>
+            <AnimatedInput
+              id="confirm-password-input"
+              name="confirmPassword"
+              type="password"
+              label="Confirm New Password"
+              placeholder="Re-enter your new password"
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
 
-            <button
-              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            <MotionButton
+              className="btn-primary w-full py-3 text-sm"
               type="submit"
               disabled={submitting || code.trim().length !== 6 || newPassword.length < 8}
+              pulse={code.trim().length === 6 && newPassword.length >= 8}
             >
               {submitting ? 'Updating password…' : 'Reset Password'}
-            </button>
+            </MotionButton>
 
             <div className="pt-2 border-t border-slate-100 text-center space-y-2">
               <button
@@ -285,7 +326,7 @@ export default function ForgotPasswordPage() {
                 className={`text-xs font-semibold transition ${
                   resendCooldown > 0
                     ? 'text-slate-400 cursor-not-allowed'
-                    : 'text-blue-600 hover:text-blue-700 underline'
+                    : 'text-primary-700 hover:text-primary-900 underline'
                 }`}
               >
                 {resendCooldown > 0
@@ -306,9 +347,9 @@ export default function ForgotPasswordPage() {
                 </button>
               </div>
             </div>
-          </form>
+          </motion.form>
         )}
-      </div>
+      </motion.div>
     </section>
   )
 }

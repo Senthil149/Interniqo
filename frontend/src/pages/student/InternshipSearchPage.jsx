@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { searchInternships } from '../../api/internships.js'
-import RiskBadge from '../../components/RiskBadge.jsx'
 import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
+import RiskBadge from '../../components/RiskBadge.jsx'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
+import { MotionButton } from '../../components/MotionButton.jsx'
 
 const INPUT =
   'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
@@ -21,8 +23,8 @@ const EMPTY_FILTERS = {
 }
 
 const WORK_MODE_COLORS = {
-  REMOTE: 'bg-sky-50 text-sky-700 border-sky-200',
-  HYBRID: 'bg-blue-50 text-blue-700 border-blue-200',
+  REMOTE: 'bg-teal-50 text-teal-700 border-teal-200',
+  HYBRID: 'bg-primary-50 text-primary-700 border-primary-200',
   ONSITE: 'bg-amber-50 text-amber-700 border-amber-200',
 }
 
@@ -31,7 +33,15 @@ function InternshipCard({ internship }) {
     WORK_MODE_COLORS[internship.workMode] ?? 'bg-slate-100 text-slate-600 border-slate-200'
 
   return (
-    <div className="card-base card-hover flex flex-col justify-between p-5 space-y-4">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      whileHover={{ y: -2 }}
+      className="card-base card-hover flex flex-col justify-between p-5 space-y-4"
+    >
       <div>
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
@@ -91,12 +101,12 @@ function InternshipCard({ internship }) {
         />
         <Link
           to={`/internships/${internship.id}`}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+          className="text-xs font-semibold text-primary-700 hover:text-primary-800 transition-colors"
         >
           Details →
         </Link>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -367,13 +377,15 @@ function InternshipSearchPage() {
             </div>
           )}
 
-          {/* Result cards */}
+          {/* Result cards with layout animation & staggered entrance */}
           {results !== null && results.length > 0 && !loading && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((internship) => (
-                <InternshipCard key={internship.id} internship={internship} />
-              ))}
-            </div>
+            <motion.div layout className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence>
+                {results.map((internship) => (
+                  <InternshipCard key={internship.id} internship={internship} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
 
           {/* Pagination */}

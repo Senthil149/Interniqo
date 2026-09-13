@@ -1,5 +1,26 @@
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuth } from '../auth/AuthContext.jsx'
+import { MotionLink } from '../components/MotionButton.jsx'
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: 'easeOut' },
+  },
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -7,13 +28,21 @@ export default function DashboardPage() {
   const role = user?.role || 'STUDENT'
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
       {/* Welcome Banner */}
-      <section className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-white p-6 sm:p-8 shadow-xs">
+      <motion.section
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-2xl border border-primary-200/60 bg-gradient-to-r from-primary-50/50 via-warm-bg to-white p-6 sm:p-8 shadow-xs"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-blue-600/10 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+              <span className="rounded-full bg-primary-700/10 px-2.5 py-0.5 text-xs font-bold text-primary-800">
                 {role} PORTAL
               </span>
               <span className="h-1 w-1 rounded-full bg-slate-300" />
@@ -24,9 +53,9 @@ export default function DashboardPage() {
             </h1>
             <p className="text-sm text-slate-600 max-w-xl">
               {role === 'STUDENT' &&
-                'Explore your personalized AI recommendations, track active applications, and manage your verified credentials.'}
+                'Explore your personalized recommendations, track active applications, and manage your verified credentials.'}
               {role === 'COMPANY' &&
-                'Manage your company postings, review candidate applicants, and issue blockchain-backed completion credentials.'}
+                'Manage your company postings, review candidate applicants, and issue verified completion credentials.'}
               {role === 'ADMIN' &&
                 'Platform administration: review system metrics, manage user roles, audit flagged listings, and monitor verification records.'}
             </p>
@@ -34,23 +63,23 @@ export default function DashboardPage() {
 
           <div className="flex-shrink-0">
             {role === 'STUDENT' && (
-              <Link to="/student/recommendations" className="btn-primary">
-                View AI Matches →
-              </Link>
+              <MotionLink to="/student/recommendations" className="btn-primary" pulse={true}>
+                View Recommendations →
+              </MotionLink>
             )}
             {role === 'COMPANY' && (
-              <Link to="/company/internships/new" className="btn-primary">
+              <MotionLink to="/company/internships/new" className="btn-primary" pulse={true}>
                 + Post Internship
-              </Link>
+              </MotionLink>
             )}
             {role === 'ADMIN' && (
-              <Link to="/admin" className="btn-primary">
+              <MotionLink to="/admin" className="btn-primary">
                 Open Admin Console →
-              </Link>
+              </MotionLink>
             )}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* STUDENT DASHBOARD */}
       {role === 'STUDENT' && (
@@ -59,13 +88,13 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="card-base card-hover">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">AI Match Engine</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">Skill Matching</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold">
                   ⚡
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">SBERT Active</div>
-              <div className="mt-1 text-xs text-slate-500">Ranked by cosine semantic similarity</div>
+              <div className="mt-2 text-2xl font-bold text-slate-900">Active Fit</div>
+              <div className="mt-1 text-xs text-slate-500">Ranked by contextual skill alignment</div>
             </div>
 
             <div className="card-base card-hover">
@@ -92,13 +121,13 @@ export default function DashboardPage() {
 
             <div className="card-base card-hover">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Web3 Credentials</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">Verified Credentials</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 font-bold">
-                  ⛓️
+                  🛡️
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">On-Chain</div>
-              <div className="mt-1 text-xs text-slate-500">Publicly verifiable proof</div>
+              <div className="mt-2 text-2xl font-bold text-slate-900">Digital Proof</div>
+              <div className="mt-1 text-xs text-slate-500">Publicly verifiable completion records</div>
             </div>
           </div>
 
@@ -112,9 +141,9 @@ export default function DashboardPage() {
               >
                 <div className="space-y-2">
                   <div className="text-2xl">🎯</div>
-                  <h3 className="font-heading font-semibold text-slate-900">AI Recommendations</h3>
+                  <h3 className="font-heading font-semibold text-slate-900">Recommended Matches</h3>
                   <p className="text-xs text-slate-600">
-                    View internships ranked specifically against your parsed resume skills.
+                    View internships ranked specifically against your profile and resume skills.
                   </p>
                 </div>
                 <div className="mt-4 text-xs font-semibold text-blue-600">Explore matches →</div>
@@ -200,18 +229,18 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="mt-2 text-2xl font-bold text-slate-900">Domain Quality</div>
-              <div className="mt-1 text-xs text-slate-500">Design Rule #4 verified signals</div>
+              <div className="mt-1 text-xs text-slate-500">Verified official business domain</div>
             </div>
 
             <div className="card-base card-hover">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Minting</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">Credentials</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 font-bold">
-                  ⛓️
+                  📜
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">Web3 Ready</div>
-              <div className="mt-1 text-xs text-slate-500">One-click Ethereum credential issue</div>
+              <div className="mt-2 text-2xl font-bold text-slate-900">Instant Issuance</div>
+              <div className="mt-1 text-xs text-slate-500">Award tamper-proof completion certificates</div>
             </div>
           </div>
 
@@ -290,10 +319,10 @@ export default function DashboardPage() {
             </Link>
           </div>
           <p className="text-sm text-slate-600">
-            Access full platform observability: User management, Company domain quality filters, Internship status moderation, Automated risk flag re-analysis, and Blockchain transaction audits.
+            Access full platform management: User accounts, Company domain verification, Internship moderation, Quality and risk screening, and Credential audit trails.
           </p>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

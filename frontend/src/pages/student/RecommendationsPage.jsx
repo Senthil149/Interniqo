@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { generateRecommendations, getRecommendations } from '../../api/recommendations.js'
 import RiskBadge from '../../components/RiskBadge.jsx'
 import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
+import { MotionButton } from '../../components/MotionButton.jsx'
 
 const INPUT =
-  'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+  'w-full rounded-xl border border-warm-border bg-white px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20'
 const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5'
 
 const WORK_MODE_COLORS = {
-  REMOTE: 'bg-sky-50 text-sky-700 border-sky-200',
-  HYBRID: 'bg-blue-50 text-blue-700 border-blue-200',
+  REMOTE: 'bg-teal-50 text-teal-700 border-teal-200',
+  HYBRID: 'bg-primary-50 text-primary-700 border-primary-200',
   ONSITE: 'bg-amber-50 text-amber-700 border-amber-200',
 }
 
@@ -25,10 +27,45 @@ const EMPTY_FILTERS = {
   visaRequired: false,
 }
 
+/**
+ * Animated numeric score counter (Category 4)
+ * Counts up smoothly from 0.000 to final value over ~600ms
+ */
+function AnimatedScore({ value, duration = 0.6 }) {
+  const [displayValue, setDisplayValue] = useState(0)
+
+  useEffect(() => {
+    let start = 0
+    const end = typeof value === 'number' ? value : 0
+    const startTime = performance.now()
+    const durationMs = duration * 1000
+
+    function step(now) {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / durationMs, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const current = start + (end - start) * eased
+      setDisplayValue(current)
+
+      if (progress < 1) {
+        requestAnimationFrame(step)
+      } else {
+        setDisplayValue(end)
+      }
+    }
+
+    requestAnimationFrame(step)
+  }, [value, duration])
+
+  return <span className="font-mono font-bold text-xs">{displayValue.toFixed(3)}</span>
+}
+
+/**
+ * SignalBadge with Category 4 Animations:
+ * - Fill bar grows from 0 to target over ~600ms on viewport entry
+ * - Numeric score counts up from 0 to final value over ~600ms
+ */
 function SignalBadge({ score }) {
-  // Cosine similarity in normalized SBERT usually ranges between -0.1 to ~0.85
-  // Format as pure score (e.g. 0.74) per Design Rule #2 (never percentage / probability)
-  const formattedScore = typeof score === 'number' ? score.toFixed(3) : '0.000'
   const normalizedWidth = Math.max(5, Math.min(100, Math.round(((score + 0.2) / 1.1) * 100)))
 
   let badgeColor = 'bg-slate-50 text-slate-700 border-slate-200'
@@ -36,30 +73,33 @@ function SignalBadge({ score }) {
   let signalText = 'Baseline'
 
   if (score >= 0.55) {
-    badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200'
-    barColor = 'bg-gradient-to-r from-emerald-500 to-teal-500'
+    badgeColor = 'bg-success-50 text-success-800 border-success-200'
+    barColor = 'bg-gradient-to-r from-success-600 to-primary-600'
     signalText = 'Strong Match'
   } else if (score >= 0.3) {
-    badgeColor = 'bg-blue-50 text-blue-800 border-blue-200'
-    barColor = 'bg-gradient-to-r from-blue-600 to-sky-400'
+    badgeColor = 'bg-primary-50 text-primary-800 border-primary-200'
+    barColor = 'bg-gradient-to-r from-primary-600 to-teal-400'
     signalText = 'Moderate Match'
   } else if (score > 0.1) {
-    badgeColor = 'bg-amber-50 text-amber-800 border-amber-200'
-    barColor = 'bg-gradient-to-r from-amber-500 to-orange-500'
+    badgeColor = 'bg-accent-50 text-accent-800 border-accent-200'
+    barColor = 'bg-gradient-to-r from-accent-500 to-amber-600'
     signalText = 'Fair Match'
   }
 
   return (
     <div className="flex flex-col items-end gap-1.5">
       <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold shadow-2xs ${badgeColor}`}>
-        <span className="text-[11px] opacity-75 font-normal">Cosine:</span>
-        <span className="font-mono font-bold text-xs">{formattedScore}</span>
+        <span className="text-[11px] opacity-75 font-normal">Match:</span>
+        <AnimatedScore value={score} duration={0.6} />
         <span className="text-[10px] font-medium opacity-85">({signalText})</span>
       </div>
       <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/60">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-          style={{ width: `${normalizedWidth}%` }}
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: `${normalizedWidth}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className={`h-full rounded-full ${barColor}`}
         />
       </div>
     </div>
@@ -71,17 +111,25 @@ function RecommendationCard({ rec }) {
     WORK_MODE_COLORS[rec.workMode] ?? 'bg-slate-100 text-slate-600 border-slate-200'
 
   return (
-    <div className="card-base card-hover flex flex-col justify-between p-5 space-y-4">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      whileHover={{ y: -2 }}
+      className="card-base card-hover flex flex-col justify-between p-5 space-y-4"
+    >
       <div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-heading font-extrabold text-white shadow-sm">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary-700 text-sm font-heading font-extrabold text-white shadow-sm">
               #{rec.ranking}
             </div>
             <div>
               <Link
                 to={`/internships/${rec.internshipId}`}
-                className="font-heading text-base font-bold text-slate-900 hover:text-blue-600 transition-colors"
+                className="font-heading text-base font-bold text-slate-900 hover:text-primary-700 transition-colors"
               >
                 {rec.title}
               </Link>
@@ -105,28 +153,28 @@ function RecommendationCard({ rec }) {
           <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${workModeClass}`}>
             {rec.workMode}
           </span>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
+          <span className="rounded-full border border-warm-border bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
             📍 {rec.country}{rec.city ? `, ${rec.city}` : ''}
           </span>
           {rec.duration && (
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
+            <span className="rounded-full border border-warm-border bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
               ⏱ {rec.duration}
             </span>
           )}
           {rec.stipend != null && (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+            <span className="rounded-full border border-success-200 bg-success-50 px-2.5 py-0.5 text-xs font-semibold text-success-700">
               💰 {rec.stipend} {rec.currency ?? ''}/mo
             </span>
           )}
           {rec.visaInformation && (
-            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+            <span className="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700">
               ✓ Visa Info Provided
             </span>
           )}
         </div>
 
         {rec.requiredSkills && (
-          <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-warm-border">
             <span className="font-semibold text-slate-700">Key Skills: </span>
             <span className="line-clamp-2">{rec.requiredSkills}</span>
           </div>
@@ -147,19 +195,19 @@ function RecommendationCard({ rec }) {
         </div>
         <Link
           to={`/internships/${rec.internshipId}`}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+          className="text-xs font-semibold text-primary-700 hover:text-primary-800 transition-colors"
         >
           View Details →
         </Link>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
-function RecommendationsPage() {
+export function RecommendationsPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [hasProfile, setHasProfile] = useState(true)
+  const [hasProfile, setHasProfile] = useState(false)
   const [recommendations, setRecommendations] = useState([])
   const [generatedAt, setGeneratedAt] = useState(null)
   const [message, setMessage] = useState('')
@@ -219,38 +267,41 @@ function RecommendationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 animate-fade-in">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-warm-border pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
-              AI ENGINE
+            <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-bold text-primary-800">
+              RECOMMENDED FOR YOU
             </span>
-            <span className="text-xs text-slate-500">Sentence-BERT 384d</span>
+            <span className="text-xs text-slate-500">Skill-based match ranking</span>
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-1">
-            Personalized AI Recommendations
+            Personalized Recommendations
           </h1>
           <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-            Hard eligibility constraints are strictly filtered first, followed by deep semantic vector matching against your parsed resume skills.
+            Opportunities filtered to your preferences and ranked by alignment with your verified skills and resume profile.
           </p>
         </div>
 
         {hasProfile && (
           <div className="flex items-center gap-2">
-            <button
+            <MotionButton
               type="button"
+              variant="secondary"
               onClick={() => setShowFilters(!showFilters)}
-              className="btn-secondary text-xs"
+              className="text-xs"
             >
               {showFilters ? 'Hide Filter Panel' : 'Filter Criteria'}
-            </button>
-            <button
+            </MotionButton>
+            <MotionButton
               type="button"
+              variant="primary"
+              pulse={true}
               onClick={handleGenerate}
               disabled={generating}
-              className="btn-primary text-xs flex items-center gap-1.5"
+              className="text-xs flex items-center gap-1.5"
             >
               {generating ? (
                 <>
@@ -266,168 +317,172 @@ function RecommendationsPage() {
                   <span>{recommendations.length > 0 ? 'Re-Compute Matches' : 'Generate Matches'}</span>
                 </>
               )}
-            </button>
+            </MotionButton>
           </div>
         )}
       </div>
 
       {/* Error alert */}
       {error && (
-        <div className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700 border border-rose-200">
+        <div className="rounded-xl bg-danger-50 p-4 text-sm text-danger-700 border border-danger-200">
           {error}
         </div>
       )}
 
       {/* Optional Filters Drawer/Panel */}
-      {showFilters && hasProfile && (
-        <form
-          onSubmit={handleGenerate}
-          className="card-base border-blue-100 bg-gradient-to-b from-blue-50/40 to-white p-5 space-y-4 animate-scale-in"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Mandatory Hard Filters (Pre-SBERT Execution)
-            </h2>
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition"
-            >
-              Reset Filters
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <label className={LABEL} htmlFor="country">Country</label>
-              <input
-                id="country"
-                name="country"
-                className={INPUT}
-                placeholder="e.g. Germany, India"
-                value={filters.country}
-                onChange={handleFilterChange}
-              />
-            </div>
-
-            <div>
-              <label className={LABEL} htmlFor="workMode">Work Mode</label>
-              <select
-                id="workMode"
-                name="workMode"
-                className={INPUT}
-                value={filters.workMode}
-                onChange={handleFilterChange}
+      <AnimatePresence>
+        {showFilters && hasProfile && (
+          <motion.form
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            onSubmit={handleGenerate}
+            className="card-base border-primary-200 bg-gradient-to-b from-primary-50/40 to-white p-5 space-y-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Refine Matching Criteria
+              </h2>
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-primary-700 hover:text-primary-800 transition cursor-pointer"
               >
-                <option value="">Any Work Mode</option>
-                <option value="REMOTE">Remote</option>
-                <option value="HYBRID">Hybrid</option>
-                <option value="ONSITE">Onsite</option>
-              </select>
+                Reset Filters
+              </button>
             </div>
 
-            <div>
-              <label className={LABEL} htmlFor="minStipend">Min Stipend</label>
-              <input
-                id="minStipend"
-                name="minStipend"
-                type="number"
-                min="0"
-                className={INPUT}
-                placeholder="0"
-                value={filters.minStipend}
-                onChange={handleFilterChange}
-              />
-            </div>
-
-            <div className="flex items-center pt-6">
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className={LABEL} htmlFor="country">Country</label>
                 <input
-                  type="checkbox"
-                  name="visaRequired"
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  checked={filters.visaRequired}
+                  id="country"
+                  name="country"
+                  className={INPUT}
+                  placeholder="e.g. Germany, India"
+                  value={filters.country}
                   onChange={handleFilterChange}
                 />
-                Require Visa Info
-              </label>
-            </div>
-          </div>
+              </div>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={generating}
-              className="btn-primary text-xs"
-            >
-              Apply Filters &amp; Recompute
-            </button>
-          </div>
-        </form>
-      )}
+              <div>
+                <label className={LABEL} htmlFor="workMode">Work Mode</label>
+                <select
+                  id="workMode"
+                  name="workMode"
+                  className={INPUT}
+                  value={filters.workMode}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">Any Work Mode</option>
+                  <option value="REMOTE">Remote</option>
+                  <option value="HYBRID">Hybrid</option>
+                  <option value="ONSITE">Onsite</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={LABEL} htmlFor="minStipend">Min Stipend</label>
+                <input
+                  id="minStipend"
+                  name="minStipend"
+                  type="number"
+                  min="0"
+                  className={INPUT}
+                  placeholder="0"
+                  value={filters.minStipend}
+                  onChange={handleFilterChange}
+                />
+              </div>
+
+              <div className="flex items-center pt-6">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="visaRequired"
+                    className="h-4 w-4 rounded border-warm-border text-primary-700 focus:ring-primary-600"
+                    checked={filters.visaRequired}
+                    onChange={handleFilterChange}
+                  />
+                  Require Visa Info
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <MotionButton
+                type="submit"
+                variant="primary"
+                disabled={generating}
+                className="text-xs"
+              >
+                Apply Filters &amp; Recompute
+              </MotionButton>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
       {/* Loading Skeleton state */}
       {loading && (
         <div className="space-y-4">
-          <div className="h-5 w-48 rounded bg-slate-200 animate-pulse" />
+          <div className="h-4 w-48 rounded bg-slate-200 animate-pulse" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <SkeletonLoader variant="card" count={4} />
           </div>
         </div>
       )}
 
-      {/* Graceful No-Resume / No-Profile state */}
+      {/* State 1: No Profile -> Prompt to upload */}
       {!loading && !hasProfile && (
-        <div className="card-base flex flex-col items-center justify-center border-dashed border-blue-300 bg-blue-50/30 px-6 py-14 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-2xl text-blue-600 mb-4 shadow-sm">
+        <div className="card-base text-center py-12 px-6 space-y-4 max-w-lg mx-auto">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-2xl shadow-xs">
             📄
           </div>
-          <h2 className="font-heading text-lg font-bold text-slate-900">
-            Resume Required for AI Recommendations
+          <h2 className="font-heading text-xl font-bold text-slate-900">
+            Resume Profile Needed
           </h2>
-          <p className="mt-2 max-w-md text-sm text-slate-600 leading-relaxed">
-            {message ||
-              'Upload your PDF resume once to extract your technical skills, experience, and academic background before generating personalized semantic matches.'}
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Personalized recommendations require your resume skills. Upload your PDF resume to automatically extract your skills and find matching roles.
           </p>
-          <div className="mt-6">
-            <Link
-              to="/student/resume"
-              className="btn-primary flex items-center gap-2"
-            >
-              <span>Upload Resume Now</span>
-              <span>→</span>
+          <div className="pt-2">
+            <Link to="/student/resume" className="btn-primary text-sm px-5 py-2.5">
+              Upload Resume PDF →
             </Link>
           </div>
         </div>
       )}
 
-      {/* Empty recommendations state */}
+      {/* State 2: Profile exists, but 0 matches */}
       {!loading && hasProfile && recommendations.length === 0 && (
-        <div className="card-base flex flex-col items-center justify-center border-dashed px-6 py-14 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-2xl text-amber-600 mb-4 shadow-sm">
-            🎯
+        <div className="card-base text-center py-12 px-6 space-y-4 max-w-lg mx-auto">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-2xl shadow-xs">
+            🔍
           </div>
-          <h2 className="font-heading text-lg font-bold text-slate-900">
+          <h2 className="font-heading text-xl font-bold text-slate-900">
             No Recommendations Generated Yet
           </h2>
-          <p className="mt-2 max-w-md text-sm text-slate-600 leading-relaxed">
+          <p className="text-sm text-slate-600 leading-relaxed">
             {message ||
-              'Click below to filter open internships and run SBERT deep semantic embedding matching against your profile.'}
+              'Click below to discover internships matching your profile preferences and skill set.'}
           </p>
           <div className="mt-6">
-            <button
+            <MotionButton
               type="button"
+              variant="primary"
+              pulse={true}
               onClick={handleGenerate}
               disabled={generating}
-              className="btn-primary"
+              className="px-5 py-2.5"
             >
               ⚡ Generate Recommendations Now
-            </button>
+            </MotionButton>
           </div>
         </div>
       )}
 
-      {/* Recommendations Results List */}
+      {/* Recommendations Results List with layout reordering & staggered entrance */}
       {!loading && hasProfile && recommendations.length > 0 && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
@@ -440,17 +495,18 @@ function RecommendationsPage() {
               )}
             </p>
 
-            {/* Design rule #2 educational notice */}
-            <div className="text-xs text-slate-600 bg-slate-100 rounded-lg px-3 py-1 border border-slate-200">
-              ℹ️ Match signal is a raw cosine similarity score for ranking (Design Rule #2). Not an admission guarantee.
+            <div className="text-xs text-slate-600 bg-slate-100 rounded-lg px-3 py-1 border border-warm-border">
+              ℹ️ Match scores represent skill alignment with job requirements. They do not guarantee an interview or offer.
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {recommendations.map((rec) => (
-              <RecommendationCard key={rec.id} rec={rec} />
-            ))}
-          </div>
+          <motion.div layout className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <AnimatePresence>
+              {recommendations.map((rec) => (
+                <RecommendationCard key={rec.id} rec={rec} />
+              ))}
+            </AnimatePresence>
+          </motion.div>
         </div>
       )}
     </div>

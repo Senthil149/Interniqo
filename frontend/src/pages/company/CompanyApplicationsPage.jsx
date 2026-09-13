@@ -1,30 +1,33 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getApplications, updateApplicationStatus } from '../../api/applications.js'
 import { getMyInternships } from '../../api/internships.js'
 import { issueCredential, getMyCredentials } from '../../api/credentials.js'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
+import { MotionButton } from '../../components/MotionButton.jsx'
+import Modal from '../../components/Modal.jsx'
 
 const STATUS_CONFIG = {
   APPLIED: {
     label: 'Applied',
-    badge: 'bg-sky-50 text-sky-700 border-sky-200',
+    badge: 'bg-teal-50 text-teal-700 border-teal-200',
   },
   SHORTLISTED: {
     label: 'Shortlisted',
-    badge: 'bg-blue-50 text-blue-700 border-blue-200',
+    badge: 'bg-primary-50 text-primary-700 border-primary-200',
   },
   ACCEPTED: {
     label: 'Accepted',
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    badge: 'bg-success-50 text-success-700 border-success-200',
   },
   REJECTED: {
     label: 'Rejected',
-    badge: 'bg-rose-50 text-rose-700 border-rose-200',
+    badge: 'bg-danger-50 text-danger-700 border-danger-200',
   },
   COMPLETED: {
     label: 'Completed',
-    badge: 'bg-amber-50 text-amber-800 border-amber-300',
+    badge: 'bg-accent-50 text-accent-800 border-accent-300',
   },
 }
 
@@ -42,39 +45,40 @@ export default function CompanyApplicationsPage() {
   const [updatingIds, setUpdatingIds] = useState({})
   const [actionError, setActionError] = useState(null)
 
-  // Issued credentials: { [studentId_internshipId]: credentialObj }
-  const [credentialsMap, setCredentialsMap] = useState({})
+  // Credential issuance tracking: { [appId]: boolean }
   const [issuingIds, setIssuingIds] = useState({})
+  const [credentialsMap, setCredentialsMap] = useState({}) // { [`${studentId}_${internshipId}`]: credentialObj }
+  const [credentialModalData, setCredentialModalData] = useState(null)
 
   useEffect(() => {
-    loadData()
+    loadPipelineData()
   }, [])
 
-  async function loadData() {
+  async function loadPipelineData() {
     setLoading(true)
     setError('')
     try {
-      const [appsRes, myInternshipsRes, credsRes] = await Promise.all([
+      const [appsRes, intsRes, credsRes] = await Promise.all([
         getApplications(),
-        getMyInternships(),
+        getMyInternships().catch(() => ({ data: [] })),
         getMyCredentials().catch(() => ({ data: [] })),
       ])
       setApplications(appsRes.data || [])
-      setInternships(myInternshipsRes.data || [])
+      setInternships(intsRes.data || [])
 
-      const credMap = {}
+      const map = {}
       ;(credsRes.data || []).forEach((c) => {
-        credMap[`${c.studentId}_${c.internshipId}`] = c
+        map[`${c.studentId}_${c.internshipId}`] = c
       })
-      setCredentialsMap(credMap)
+      setCredentialsMap(map)
     } catch {
-      setError('Unable to load candidate applications. Please try again.')
+      setError('Unable to load application pipeline. Please refresh or try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleIssueCredential(applicationId, studentId, internshipId) {
+  async function handleIssueCredential(applicationId, studentId, internshipId, candidateName, positionTitle) {
     setIssuingIds((prev) => ({ ...prev, [applicationId]: true }))
     setActionError(null)
 
@@ -84,9 +88,15 @@ export default function CompanyApplicationsPage() {
         ...prev,
         [`${studentId}_${internshipId}`]: data,
       }))
+      // Open Category 6: Credential Result Dialog Modal
+      setCredentialModalData({
+        ...data,
+        studentName: candidateName,
+        internshipTitle: positionTitle,
+      })
     } catch (err) {
       const msg =
-        err.response?.data?.message || 'Failed to issue blockchain credential. Please ensure the local Hardhat node is running.'
+        err.response?.data?.message || 'Failed to issue credential. Please try again in a moment.'
       setActionError({ appId: applicationId, message: msg })
     } finally {
       setIssuingIds((prev) => ({ ...prev, [applicationId]: false }))
@@ -172,18 +182,20 @@ export default function CompanyApplicationsPage() {
           <div className="flex flex-wrap gap-1">
             {['ALL', 'APPLIED', 'SHORTLISTED', 'ACCEPTED', 'REJECTED', 'COMPLETED'].map(
               (status) => (
-                <button
+                <motion.button
                   key={status}
                   type="button"
+                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ y: -1 }}
                   onClick={() => setStatusFilter(status)}
                   className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
                     statusFilter === status
-                      ? 'bg-blue-600 text-white shadow-2xs'
+                      ? 'bg-primary-700 text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {status}
-                </button>
+                </motion.button>
               )
             )}
           </div>
@@ -224,22 +236,29 @@ export default function CompanyApplicationsPage() {
         </div>
       )}
 
-      {/* Candidate Applications List */}
+      {/* Candidate Applications List with layout reordering animations (Category 3) */}
       {!loading && !error && filtered.length > 0 && (
-        <div className="space-y-4">
-          {filtered.map((app) => {
-            const isUpdating = Boolean(updatingIds[app.id])
-            const hasError = actionError?.appId === app.id
-            const config = STATUS_CONFIG[app.status] ?? {
-              label: app.status,
-              badge: 'bg-slate-100 text-slate-700 border-slate-200',
-            }
+        <motion.div layout className="space-y-4">
+          <AnimatePresence>
+            {filtered.map((app) => {
+              const isUpdating = Boolean(updatingIds[app.id])
+              const hasError = actionError?.appId === app.id
+              const config = STATUS_CONFIG[app.status] ?? {
+                label: app.status,
+                badge: 'bg-slate-100 text-slate-700 border-slate-200',
+              }
 
-            return (
-              <div
-                key={app.id}
-                className="card-base card-hover p-6 space-y-4"
-              >
+              return (
+                <motion.div
+                  layout
+                  key={app.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  whileHover={{ y: -2 }}
+                  className="card-base card-hover p-6 space-y-4"
+                >
                 {/* Top: Candidate info and target internship */}
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
@@ -369,26 +388,30 @@ export default function CompanyApplicationsPage() {
                     {app.status === 'COMPLETED' && (
                       <div className="flex flex-wrap items-center gap-2">
                         {credentialsMap[`${app.studentId}_${app.internshipId}`] ? (
-                          <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5">
-                            <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
-                              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="inline-flex items-center gap-2 rounded-xl bg-success-50 border border-success-200 px-3 py-1.5">
+                            <span className="text-xs font-bold text-success-800 flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                               </svg>
-                              Credential Minted
+                              Credential Issued
                             </span>
-                            <Link
-                              to={`/verify-credential/${encodeURIComponent(credentialsMap[`${app.studentId}_${app.internshipId}`].credentialId)}`}
-                              target="_blank"
-                              className="text-xs font-semibold text-blue-600 hover:text-blue-800 underline"
+                            <button
+                              type="button"
+                              onClick={() => setCredentialModalData({
+                                ...credentialsMap[`${app.studentId}_${app.internshipId}`],
+                                studentName: app.studentName,
+                                internshipTitle: app.internshipTitle,
+                              })}
+                              className="text-xs font-semibold text-primary-700 hover:text-primary-900 underline cursor-pointer"
                             >
-                              Verify ({credentialsMap[`${app.studentId}_${app.internshipId}`].credentialId})
-                            </Link>
+                              Inspect ({credentialsMap[`${app.studentId}_${app.internshipId}`].credentialId})
+                            </button>
                           </div>
                         ) : (
-                          <button
+                          <MotionButton
                             type="button"
                             disabled={issuingIds[app.id]}
-                            onClick={() => handleIssueCredential(app.id, app.studentId, app.internshipId)}
+                            onClick={() => handleIssueCredential(app.id, app.studentId, app.internshipId, app.studentName, app.internshipTitle)}
                             className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
                           >
                             {issuingIds[app.id] ? (
@@ -397,17 +420,17 @@ export default function CompanyApplicationsPage() {
                                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z" />
                                 </svg>
-                                <span>Minting on Ledger…</span>
+                                <span>Issuing Credential…</span>
                               </>
                             ) : (
                               <>
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
-                                <span>Issue Blockchain Credential</span>
+                                <span>Issue Verified Credential</span>
                               </>
                             )}
-                          </button>
+                          </MotionButton>
                         )}
                       </div>
                     )}
@@ -416,15 +439,79 @@ export default function CompanyApplicationsPage() {
 
                 {/* In-line error message */}
                 {hasError && (
-                  <div className="mt-2 text-xs font-semibold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                  <div className="mt-2 text-xs font-semibold text-danger-700 bg-danger-50 p-2 rounded-lg border border-danger-200">
                     {actionError.message}
                   </div>
                 )}
-              </div>
-            )
-          })}
-        </div>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
+        </motion.div>
       )}
+
+      {/* Category 6: Credential Result Dialog Modal with scale 0.9->1 + separate backdrop fade */}
+      <Modal
+        isOpen={Boolean(credentialModalData)}
+        onClose={() => setCredentialModalData(null)}
+        title="Completion Credential Issued"
+      >
+        {credentialModalData && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-success-200 bg-success-50 p-4 text-xs text-success-900 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-sm text-success-800">
+                <span>✅</span> Official Credential Created
+              </p>
+              <p className="text-success-700">
+                The completion credential has been securely issued and registered with an authentic verification record.
+              </p>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-600 bg-warm-bg/60 p-4 rounded-xl border border-warm-border">
+              <div>
+                <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Student Recipient</span>
+                <span className="font-bold text-slate-900 text-sm">{credentialModalData.studentName || 'Candidate'}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Internship Position</span>
+                <span className="font-medium text-slate-800">{credentialModalData.internshipTitle || 'Internship Program'}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Credential ID</span>
+                <span className="font-mono font-bold text-primary-800 bg-white px-2 py-1 rounded border border-slate-200 block mt-0.5 select-all">
+                  {credentialModalData.credentialId}
+                </span>
+              </div>
+              {credentialModalData.transactionHash && (
+                <div>
+                  <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] block">Transaction Hash</span>
+                  <span className="font-mono text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 block mt-0.5 break-all select-all">
+                    {credentialModalData.transactionHash}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCredentialModalData(null)}
+                className="btn-secondary text-xs py-2 px-3"
+              >
+                Close
+              </button>
+              <Link
+                to={`/verify-credential/${encodeURIComponent(credentialModalData.credentialId)}`}
+                target="_blank"
+                className="btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+              >
+                <span>Open Verification Record</span>
+                <span>→</span>
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

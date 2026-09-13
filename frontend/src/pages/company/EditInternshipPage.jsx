@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getCompanyInternship, updateInternship } from '../../api/internships.js'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
+import { MotionButton } from '../../components/MotionButton.jsx'
 
 const INPUT =
-  'mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+  'mt-1.5 w-full rounded-xl border border-warm-border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-2xs'
 const LABEL = 'block text-xs font-bold uppercase tracking-wider text-slate-700'
 
 function Section({ title, children }) {
@@ -110,17 +112,29 @@ function EditInternshipPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700 animate-scale-in">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded-2xl border border-danger-200 bg-danger-50 p-4 text-xs font-semibold text-danger-700"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <motion.form
+        onSubmit={handleSubmit}
+        animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="space-y-6"
+      >
         <Section title="Basic Information">
           <div>
             <label className={LABEL} htmlFor="title">
-              Role Title <span className="text-rose-500">*</span>
+              Role Title <span className="text-danger-500">*</span>
             </label>
             <input
               id="title"
@@ -143,7 +157,7 @@ function EditInternshipPage() {
             />
           </div>
           <div>
-            <label className={LABEL} htmlFor="requiredSkills">Target Skills (SBERT Vectorized)</label>
+            <label className={LABEL} htmlFor="requiredSkills">Target Skills &amp; Qualifications</label>
             <textarea
               id="requiredSkills"
               name="requiredSkills"
@@ -289,13 +303,14 @@ function EditInternshipPage() {
         </Section>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">
-          <button
+          <MotionButton
             type="submit"
             disabled={submitting}
             className="btn-primary"
+            pulse={false}
           >
             {submitting ? 'Updating Listing…' : 'Save Changes'}
-          </button>
+          </MotionButton>
           <button
             type="button"
             onClick={() => navigate('/company/internships')}
@@ -304,7 +319,7 @@ function EditInternshipPage() {
             Cancel
           </button>
         </div>
-      </form>
+      </motion.form>
     </div>
   )
 }

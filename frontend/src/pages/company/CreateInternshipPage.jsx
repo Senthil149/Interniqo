@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createInternship } from '../../api/internships.js'
+import { MotionButton } from '../../components/MotionButton.jsx'
 
 const INPUT =
-  'mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+  'mt-1.5 w-full rounded-xl border border-warm-border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-2xs'
 const LABEL = 'block text-xs font-bold uppercase tracking-wider text-slate-700'
 
 const EMPTY_FORM = {
@@ -75,18 +77,30 @@ function CreateInternshipPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700 animate-scale-in">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="rounded-2xl border border-danger-200 bg-danger-50 p-4 text-xs font-semibold text-danger-700"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <motion.form
+        onSubmit={handleSubmit}
+        animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="space-y-6"
+      >
         {/* Basic Info */}
         <Section title="Basic Role Information">
           <div>
             <label className={LABEL} htmlFor="title">
-              Role Title <span className="text-rose-500">*</span>
+              Role Title <span className="text-danger-500">*</span>
             </label>
             <input
               id="title"
@@ -114,7 +128,7 @@ function CreateInternshipPage() {
           </div>
           <div>
             <label className={LABEL} htmlFor="requiredSkills">
-              Target Skills (Parsed by SBERT Matcher)
+              Target Skills &amp; Qualifications
             </label>
             <textarea
               id="requiredSkills"
@@ -133,7 +147,7 @@ function CreateInternshipPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={LABEL} htmlFor="country">
-                Country <span className="text-rose-500">*</span>
+                Country <span className="text-danger-500">*</span>
               </label>
               <input
                 id="country"
@@ -161,7 +175,7 @@ function CreateInternshipPage() {
           </div>
           <div>
             <label className={LABEL} htmlFor="workMode">
-              Work Mode <span className="text-rose-500">*</span>
+              Work Mode <span className="text-danger-500">*</span>
             </label>
             <select
               id="workMode"
@@ -279,13 +293,14 @@ function CreateInternshipPage() {
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-3 pt-2">
-          <button
+          <MotionButton
             type="submit"
             disabled={submitting}
             className="btn-primary"
+            pulse={false}
           >
             {submitting ? 'Publishing Opportunity…' : 'Publish Internship Posting'}
-          </button>
+          </MotionButton>
           <button
             type="button"
             onClick={() => navigate('/company/internships')}
@@ -294,7 +309,7 @@ function CreateInternshipPage() {
             Cancel
           </button>
         </div>
-      </form>
+      </motion.form>
     </div>
   )
 }

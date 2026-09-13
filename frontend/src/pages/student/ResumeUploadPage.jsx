@@ -106,7 +106,7 @@ function ResumeUploadPage() {
           My Resume &amp; Skills Profile
         </h1>
         <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-          Upload your PDF resume to auto-populate your extracted skills and vector embeddings. The NLP extraction is an automated first-pass heuristic used by the SBERT engine to rank opportunities.
+          Upload your PDF resume to auto-populate your profile. Your skills and background will automatically power your personalized internship recommendations.
         </p>
       </div>
 
@@ -177,7 +177,7 @@ function ResumeUploadPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
-                  Extracting NLP Entities…
+                  Extracting Resume Details…
                 </>
               ) : (
                 'Upload & Parse Resume'
@@ -220,16 +220,16 @@ function ResumeUploadPage() {
           <div>
             {aiSucceeded ? (
               <>
-                <p className="font-bold">Resume Parsing Completed Successfully</p>
+                <p className="font-bold">Resume Processed Successfully</p>
                 <p className="mt-0.5 opacity-85 leading-relaxed">
-                  Extracted sections below will feed directly into the SBERT recommendation matcher. You can re-upload anytime to update your profile.
+                  Your skills and background have been extracted below and will power your personalized recommendations. You can re-upload anytime to update your profile.
                 </p>
               </>
             ) : (
               <>
-                <p className="font-bold">NLP Parsing Service Warning</p>
+                <p className="font-bold">Automated Processing Unavailable</p>
                 <p className="mt-0.5 opacity-85 leading-relaxed">
-                  Your PDF was safely persisted on the server, but automated entity extraction could not be reached. Try re-uploading when the AI service is active.
+                  Your PDF was saved safely, but automatic skill extraction could not be completed right now. Please try re-uploading in a moment.
                 </p>
               </>
             )}
@@ -252,7 +252,7 @@ function ResumeUploadPage() {
               Parsed Resume Data
             </h2>
             <p className="text-xs text-slate-400">
-              Automated first-pass extraction · SBERT embedding ready
+              Extracted from your uploaded resume
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

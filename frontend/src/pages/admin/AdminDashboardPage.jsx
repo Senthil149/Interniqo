@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   getAdminMetrics,
   getAdminUsers,
@@ -15,6 +16,8 @@ import {
 } from '../../api/admin.js'
 import RiskBadge from '../../components/RiskBadge.jsx'
 import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
+import SkeletonLoader from '../../components/SkeletonLoader.jsx'
+import { MotionButton } from '../../components/MotionButton.jsx'
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -388,22 +391,23 @@ export default function AdminDashboardPage() {
             },
             { id: 'verifications', label: 'Verifications' },
           ].map((tab) => (
-            <button
+            <motion.button
               key={tab.id}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 transition whitespace-nowrap ${
+              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 transition whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 font-semibold'
+                  ? 'border-primary-700 text-primary-700 font-semibold'
                   : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
               }`}
             >
               {tab.label}
               {tab.badge != null && tab.badge > 0 && (
-                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">
+                <span className="rounded-full bg-danger-100 px-2 py-0.5 text-xs font-bold text-danger-700">
                   {tab.badge}
                 </span>
               )}
-            </button>
+            </motion.button>
           ))}
         </nav>
       </div>
@@ -493,7 +497,7 @@ export default function AdminDashboardPage() {
                   <span className="font-semibold text-slate-800">{metrics?.totalEmailVerifications ?? 0}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Blockchain Credentials:</span>
+                  <span className="text-slate-500">Issued Credentials:</span>
                   <span className="font-semibold text-blue-600">{metrics?.totalBlockchainCredentials ?? 0}</span>
                 </div>
                 <div className="flex justify-between py-1 pt-2 font-bold text-slate-900">
@@ -538,7 +542,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {loadingUsers ? (
-            <div className="text-center py-10 text-sm text-slate-500">Loading users...</div>
+            <SkeletonLoader variant="table-block" count={5} />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
               <table className="w-full text-left text-xs">
@@ -619,7 +623,7 @@ export default function AdminDashboardPage() {
                 Manage registered company accounts, monitor domain signals, and override verification status.
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Design Rule #4: Personal email signals are informational heuristics, not proof of illegitimacy.
+                Note: Personal email signals are informational indicators, not conclusive proof of illegitimacy.
               </p>
             </div>
             <input
@@ -674,7 +678,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {loadingCompanies ? (
-            <div className="text-center py-10 text-sm text-slate-500">Loading companies...</div>
+            <SkeletonLoader variant="table-block" count={5} />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
               <table className="w-full text-left text-xs">
@@ -786,7 +790,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {loadingInternships ? (
-            <div className="text-center py-10 text-sm text-slate-500">Loading internships...</div>
+            <SkeletonLoader variant="table-block" count={5} />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
               <table className="w-full text-left text-xs">
@@ -884,12 +888,12 @@ export default function AdminDashboardPage() {
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <h2 className="text-sm font-bold text-slate-900">Flagged Postings Review Inbox</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Review internships where the weighted risk scoring engine detected warning indicators (Design Rule #3). You can trigger re-analysis or take down suspicious postings.
+              Review internships where the automated risk scoring engine detected warning indicators. You can trigger re-analysis or take down suspicious postings.
             </p>
           </div>
 
           {loadingFlagged ? (
-            <div className="text-center py-10 text-sm text-slate-500">Loading flagged postings...</div>
+            <SkeletonLoader variant="card" count={3} />
           ) : flagged.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
               <span className="text-2xl">🎉</span>
@@ -1010,12 +1014,12 @@ export default function AdminDashboardPage() {
                   : 'border border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              Blockchain Credential Ledger ({blockchainRecords.length})
+              Issued Credential Ledger ({blockchainRecords.length})
             </button>
           </div>
 
           {loadingVerifications ? (
-            <div className="text-center py-10 text-sm text-slate-500">Loading audit trail...</div>
+            <SkeletonLoader variant="table-block" count={5} />
           ) : verificationSubTab === 'email' ? (
             /* Email Verifications Table */
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">

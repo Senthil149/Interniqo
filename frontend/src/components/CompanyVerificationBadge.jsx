@@ -57,7 +57,7 @@ export default function CompanyVerificationBadge({
         ) : (
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border font-semibold bg-emerald-50 text-emerald-800 border-emerald-200 shadow-xs ${pillPadding}`}
-            title="Verified organizational domain (inbox control confirmed per Design Rule #4)."
+            title="Verified organizational domain (inbox control confirmed)."
           >
             <span className="text-emerald-600 font-bold">✓</span>
             <span>Verified Org Domain</span>
@@ -105,8 +105,8 @@ export default function CompanyVerificationBadge({
             setPopoverOpen((prev) => !prev)
           }}
           className="inline-flex items-center justify-center h-4 w-4 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          aria-label="Explain verification status and Design Rule #4 details"
-          title="View verification details (Design Rule #4)"
+          aria-label="Explain verification status details"
+          title="View verification details"
         >
           ℹ
         </button>
@@ -162,7 +162,7 @@ export default function CompanyVerificationBadge({
                 {personalEmail ? (
                   <>
                     <strong className="text-amber-800">Additional Review Recommended:</strong> This
-                    is an informational domain-pattern heuristic. Many genuine small businesses and
+                    is an informational indicator. Many genuine small businesses and
                     startups legitimately use personal email providers; this is <em>not</em> proof
                     the company is illegitimate.
                   </>
@@ -191,9 +191,8 @@ export default function CompanyVerificationBadge({
               </div>
             ) : null}
 
-            {/* Mandatory Design Rule #4 Disclaimer */}
             <div className="rounded-xl bg-amber-50/80 border border-amber-200 p-2.5 text-[11px] text-amber-900 leading-relaxed">
-              <strong className="font-semibold">Notice (Design Rule #4):</strong> Verification
+              <strong className="font-semibold">Notice:</strong> Verification
               confirms inbox and domain control only. It does not certify legal company
               incorporation, government registration, or business legitimacy.
             </div>

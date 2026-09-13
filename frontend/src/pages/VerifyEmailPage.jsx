@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { verifyEmailToken, verifyCode, resendCode } from '../api/auth.js'
 import { useAuth } from '../auth/AuthContext.jsx'
+import AnimatedInput from '../components/AnimatedInput.jsx'
+import { MotionButton } from '../components/MotionButton.jsx'
 
 /**
  * Verification page for 6-digit code verification.
@@ -137,9 +140,19 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="mx-auto max-w-md py-8 animate-fade-in-up">
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+      {/* Category 6: Code verification dialog with scale (0.9->1) + fade entrance */}
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="rounded-2xl border border-warm-border bg-white p-6 sm:p-8 shadow-sm space-y-6"
+      >
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 shadow-xs">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-700 ring-1 ring-primary-100 shadow-xs"
+          >
             <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -148,90 +161,108 @@ export default function VerifyEmailPage() {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-display">Email Verification</h1>
+          </motion.div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-heading">Email Verification</h1>
           <p className="mt-1 text-sm text-slate-600">
             Enter your email and the 6-digit code sent to your inbox.
           </p>
         </div>
 
         {success ? (
-          <div className="space-y-4 text-center animate-scale-in">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 space-y-1">
-              <p className="font-semibold text-emerald-900 font-display">Account Verified!</p>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="space-y-4 text-center"
+          >
+            <div className="rounded-xl border border-success-200 bg-success-50 p-4 text-xs text-success-800 space-y-1">
+              <p className="font-semibold text-success-900 font-heading">Account Verified!</p>
               <p>{successNotice || 'Your email address has been verified successfully.'}</p>
             </div>
             <Link
               to="/dashboard"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-primary-700 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-primary-800 hover:shadow-md hover:-translate-y-0.5 active:bg-primary-900"
             >
               Go to Dashboard →
             </Link>
-          </div>
+          </motion.div>
         ) : (
           <form className="space-y-4" onSubmit={handleVerify}>
-            {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-scale-in">
-                {error}
-              </div>
-            ) : null}
+            <AnimatePresence>
+              {error ? (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="rounded-xl border border-danger-200 bg-danger-50 p-3.5 text-xs text-danger-700"
+                >
+                  {error}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             {resendMessage ? (
-              <div
-                className={`rounded-xl border p-3 text-xs animate-scale-in ${
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-xl border p-3 text-xs ${
                   resendMessage.type === 'success'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                    : 'border-rose-200 bg-rose-50 text-rose-700'
+                    ? 'border-success-200 bg-success-50 text-success-800'
+                    : 'border-danger-200 bg-danger-50 text-danger-700'
                 }`}
               >
                 {resendMessage.text}
-              </div>
+              </motion.div>
             ) : null}
 
-            <label className="block text-sm font-medium text-slate-700">
-              Account Email
-              <input
-                type="email"
-                required
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
-              />
-            </label>
+            <AnimatedInput
+              id="verify-email-input"
+              name="email"
+              type="email"
+              label="Account Email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
             <div>
               <label htmlFor="code-input" className="block text-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5 font-mono">
                 6-Digit Verification Code
               </label>
-              <input
-                id="code-input"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                autoFocus
-                value={code}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6)
-                  setCode(val)
-                  if (error) setError(null)
-                }}
-                placeholder="••••••"
-                className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition shadow-inner placeholder:text-slate-300"
-              />
+              <motion.div
+                animate={error ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+              >
+                <input
+                  id="code-input"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoFocus
+                  value={code}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    setCode(val)
+                    if (error) setError(null)
+                  }}
+                  placeholder="••••••"
+                  className="w-full text-center font-mono text-2xl font-bold tracking-[0.4em] py-2.5 rounded-xl border border-warm-border focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 transition shadow-inner placeholder:text-slate-300"
+                />
+              </motion.div>
               <p className="mt-1 text-center text-[11px] text-slate-400">
                 Code expires in 10 minutes.
               </p>
             </div>
 
-            <button
+            <MotionButton
               type="submit"
               disabled={submitting || code.trim().length !== 6 || !email.trim()}
-              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              className="btn-primary w-full py-3 text-sm"
+              pulse={code.trim().length === 6}
             >
               {submitting ? 'Verifying Code…' : 'Verify & Activate'}
-            </button>
+            </MotionButton>
 
             <div className="pt-2 border-t border-slate-100 text-center">
               <button
@@ -241,7 +272,7 @@ export default function VerifyEmailPage() {
                 className={`text-xs font-semibold transition ${
                   resendCooldown > 0 || !email.trim()
                     ? 'text-slate-400 cursor-not-allowed'
-                    : 'text-blue-600 hover:text-blue-700 underline'
+                    : 'text-primary-700 hover:text-primary-900 underline'
                 }`}
               >
                 {resendCooldown > 0
@@ -250,13 +281,13 @@ export default function VerifyEmailPage() {
               </button>
             </div>
 
-            {/* Design Rule #4 Disclaimer */}
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-500 leading-relaxed text-center">
-              <span className="font-semibold text-slate-700">Notice (Design Rule #4):</span> Email verification confirms control of this email address only. It does not certify legal company incorporation or academic standing.
-            </div>
+            {/* Verification Disclaimer */}
+            <p className="text-center text-xs text-slate-500 leading-relaxed max-w-sm">
+              <span className="font-semibold text-slate-700">Notice:</span> Email verification confirms control of this email address only. It does not certify legal company incorporation or academic standing.
+            </p>
           </form>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }

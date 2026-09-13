@@ -241,17 +241,17 @@ export default function CompanyProfilePage() {
         </div>
       </form>
 
-      {/* Design Rule #4 Informational Card */}
+      {/* Verification Informational Card */}
       <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 text-xs text-amber-900 space-y-2 leading-relaxed">
         <p className="font-bold text-sm text-amber-950 flex items-center gap-1.5">
-          <span>ℹ️ Platform Verification Notice (Design Rule #4)</span>
+          <span>ℹ️ Platform Verification Notice</span>
         </p>
         <p>
           Email verification and website domain matching confirm control of the respective inbox and domain name only.
           They do not certify legal incorporation, government business registration, or financial legitimacy.
         </p>
         <p className="text-amber-800">
-          <strong>Personal Email Providers:</strong> Small businesses and early-stage companies often use free email providers (e.g. Gmail, Yahoo). Our domain-pattern heuristic highlights this for review purposes, but never blocks listings or implies illegitimacy.
+          <strong>Personal Email Providers:</strong> Small businesses and early-stage companies often use free email providers (e.g. Gmail, Yahoo). Our system highlights this for transparency, but never blocks listings or implies illegitimacy.
         </p>
       </div>
     </div>

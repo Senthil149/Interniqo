@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { verifyCredential } from '../api/credentials.js'
 import SkeletonLoader from '../components/SkeletonLoader.jsx'
+import { MotionButton } from '../components/MotionButton.jsx'
 
 export default function VerifyCredentialPage() {
   const { credentialId: paramId } = useParams()
@@ -34,7 +36,7 @@ export default function VerifyCredentialPage() {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          'Unable to reach verification service. Please ensure the backend and blockchain node are running.'
+          'Unable to reach verification service. Please try again in a few moments.'
       )
     } finally {
       setLoading(false)
@@ -57,20 +59,28 @@ export default function VerifyCredentialPage() {
     <div className="mx-auto max-w-4xl space-y-8 py-4 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1 text-xs font-semibold text-blue-800 shadow-2xs">
-          <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-          <span>Ethereum Smart Contract Verification</span>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50/80 px-3.5 py-1 text-xs font-semibold text-primary-800 shadow-2xs"
+        >
+          <span className="flex h-2 w-2 rounded-full bg-primary-600 animate-pulse" />
+          <span>Instant Credential Verification</span>
+        </motion.div>
         <h1 className="font-heading text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
           Public Credential Verification
         </h1>
         <p className="mx-auto max-w-2xl text-sm text-slate-600 leading-relaxed">
-          Verify cryptographic authenticity, tamper-proof canonical hash integrity, and immutable on-chain record of any internship completion credential. No login required.
+          Verify the authenticity, integrity, and official record of any internship certificate issued on Interniqo. No login required.
         </p>
       </div>
 
       {/* Search Input Box */}
-      <div className="card-base border-blue-100 bg-white p-5 sm:p-7 shadow-xs">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="card-base border-primary-100 bg-white p-5 sm:p-7 shadow-xs"
+      >
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -83,13 +93,14 @@ export default function VerifyCredentialPage() {
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               placeholder="Enter Credential ID (e.g. CRED-A1B2C3D4E5F6)..."
-              className="w-full rounded-xl border border-slate-300 py-3 pl-11 pr-4 text-sm font-mono transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-warm-border py-3 pl-11 pr-4 text-sm font-mono transition focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-2xs"
             />
           </div>
-          <button
+          <MotionButton
             type="submit"
             disabled={loading || !inputVal.trim()}
-            className="btn-primary text-sm px-6 py-3 flex items-center justify-center gap-2"
+            className="btn-primary text-sm px-6 py-3 flex items-center justify-center gap-2 shrink-0"
+            pulse={Boolean(inputVal.trim())}
           >
             {loading ? (
               <>
@@ -97,40 +108,50 @@ export default function VerifyCredentialPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z" />
                 </svg>
-                <span>Auditing On-Chain…</span>
+                  <span>Verifying Credential…</span>
               </>
             ) : (
               'Verify Credential'
             )}
-          </button>
+          </MotionButton>
         </form>
-      </div>
+      </motion.div>
 
       {/* Network Error */}
-      {error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700 animate-scale-in">
-          <p className="font-bold flex items-center gap-2">
-            <span>⚠️</span> Verification Service Notice
-          </p>
-          <p className="mt-1">{error}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="rounded-2xl border border-danger-200 bg-danger-50 p-5 text-sm text-danger-700"
+          >
+            <p className="font-bold flex items-center gap-2">
+              <span>⚠️</span> Verification Service Notice
+            </p>
+            <p className="mt-1">{error}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Loading Skeleton state */}
+      {/* Category 2: Content-shaped Skeleton Loading state */}
       {loading && (
-        <div className="card-base animate-pulse space-y-6">
-          <div className="h-10 w-64 rounded-xl bg-slate-200" />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-20 rounded-xl bg-slate-100" />
-            <div className="h-20 rounded-xl bg-slate-100" />
+        <div className="space-y-4">
+          <SkeletonLoader variant="detail-header" count={1} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SkeletonLoader variant="card" count={2} />
           </div>
-          <div className="h-32 rounded-xl bg-slate-100" />
         </div>
       )}
 
-      {/* Verification Results */}
+      {/* Category 6: Verification Results scale (0.95->1) + fade entrance */}
       {result && !loading && (
-        <div className="space-y-6 animate-scale-in">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="space-y-6"
+        >
           {/* Status 1: VERIFIED */}
           {result.status === 'VERIFIED' && (
             <div className="overflow-hidden rounded-3xl border-2 border-emerald-500/30 bg-white shadow-xl">
@@ -156,7 +177,7 @@ export default function VerifyCredentialPage() {
                   {/* Stamp */}
                   <div className="rounded-xl border border-white/30 bg-white/10 px-3.5 py-1.5 text-center text-xs backdrop-blur-xs">
                     <div className="font-bold uppercase tracking-wider text-[10px] text-emerald-100">Status</div>
-                    <div className="font-bold text-white">GENUINE &amp; ON-CHAIN</div>
+                    <div className="font-bold text-white">OFFICIALLY VERIFIED</div>
                   </div>
                 </div>
               </div>
@@ -207,11 +228,11 @@ export default function VerifyCredentialPage() {
                     <div className="flex items-center gap-2">
                       <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                        Blockchain Ledger Proof
+                        Digital Verification Proof
                       </h4>
                     </div>
                     <span className="rounded-full bg-slate-200/80 px-3 py-0.5 text-xs font-mono font-medium text-slate-700">
-                      Network: {result.onChainRecord?.network || 'hardhat-local'}
+                      Registry: {result.onChainRecord?.network || 'Verified Ledger'}
                     </span>
                   </div>
 
@@ -248,7 +269,7 @@ export default function VerifyCredentialPage() {
 
                     {result.onChainRecord?.contractAddress && (
                       <div>
-                        <span className="text-slate-500 font-medium">Smart Contract Address:</span>
+                        <span className="text-slate-500 font-medium">Registry Contract:</span>
                         <p className="font-mono text-slate-700 bg-white border border-slate-200 rounded-xl p-2.5 break-all mt-1">
                           {result.onChainRecord.contractAddress}
                         </p>
@@ -257,7 +278,7 @@ export default function VerifyCredentialPage() {
 
                     {result.onChainRecord?.timestamp && (
                       <div>
-                        <span className="text-slate-500 font-medium">On-Chain Block Timestamp:</span>
+                        <span className="text-slate-500 font-medium">Verification Timestamp:</span>
                         <p className="text-slate-700 font-medium mt-1">
                           {new Date(result.onChainRecord.timestamp).toUTCString()}
                         </p>
@@ -302,7 +323,7 @@ export default function VerifyCredentialPage() {
                   </div>
 
                   <div>
-                    <span className="font-semibold text-rose-800">On-Chain Ledger Hash:</span>
+                    <span className="font-semibold text-rose-800">Registry Hash:</span>
                     <p className="font-mono text-slate-800 bg-white border border-slate-200 rounded-lg p-2 break-all mt-1">
                       {result.onChainRecord?.credentialHash || '(None recorded)'}
                     </p>
@@ -329,7 +350,7 @@ export default function VerifyCredentialPage() {
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   )
