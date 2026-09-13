@@ -14,7 +14,9 @@ import { useState, useRef, useEffect } from 'react'
  *   not legal incorporation, business legitimacy, or official identity.
  */
 export default function CompanyVerificationBadge({
+  verificationStatus = 'UNVERIFIED',
   verified = false,
+  companyVerified = false,
   personalEmail = false,
   websiteDomainMatch = false,
   website = '',
@@ -25,6 +27,14 @@ export default function CompanyVerificationBadge({
 }) {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const popoverRef = useRef(null)
+
+  // Derive effective status
+  const isCompanyFullyVerified =
+    verificationStatus === 'COMPANY_VERIFIED' || companyVerified === true
+  const isEmailVerified =
+    isCompanyFullyVerified ||
+    verificationStatus === 'EMAIL_VERIFIED' ||
+    verified === true
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -45,28 +55,36 @@ export default function CompanyVerificationBadge({
   return (
     <div className="relative inline-flex flex-wrap items-center gap-1.5" ref={popoverRef}>
       {/* Primary Verification Badge */}
-      {verified ? (
+      {isCompanyFullyVerified ? (
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border font-semibold bg-indigo-50 text-indigo-800 border-indigo-200 shadow-xs ${pillPadding}`}
+          title="Full corporate verification completed (legal business registration and organizational control confirmed)."
+        >
+          <span className="text-indigo-600 font-bold">🛡</span>
+          <span>✓ Company Verified</span>
+        </span>
+      ) : isEmailVerified ? (
         personalEmail ? (
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border font-medium bg-amber-50 text-amber-800 border-amber-200 shadow-xs ${pillPadding}`}
-            title="Registered with a personal email provider. Additional review recommended."
+            title="Email ownership verified with personal email provider. Additional review recommended."
           >
-            <span className="text-amber-500 font-bold">⚠️</span>
-            <span>Personal Email Provider</span>
+            <span className="text-amber-500 font-bold">✓</span>
+            <span>Verified Email</span>
           </span>
         ) : (
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border font-semibold bg-emerald-50 text-emerald-800 border-emerald-200 shadow-xs ${pillPadding}`}
-            title="Verified organizational domain (inbox control confirmed)."
+            title="Email ownership verified via 6-digit OTP (inbox control confirmed)."
           >
             <span className="text-emerald-600 font-bold">✓</span>
-            <span>Verified Org Domain</span>
+            <span>Email Verified Company</span>
           </span>
         )
       ) : (
         <span
           className={`inline-flex items-center gap-1 rounded-full border font-medium bg-slate-100 text-slate-600 border-slate-200 ${pillPadding}`}
-          title="Email has not yet completed 6-digit code verification."
+          title="Email has not yet completed verification."
         >
           <span>Unverified Email</span>
         </span>

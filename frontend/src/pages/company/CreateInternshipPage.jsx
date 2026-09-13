@@ -20,6 +20,8 @@ const EMPTY_FORM = {
   currency: '',
   eligibility: '',
   visaInformation: '',
+  visaRequired: false,
+  relocationRequired: false,
   deadline: '',
 }
 
@@ -41,8 +43,8 @@ function CreateInternshipPage() {
   const navigate = useNavigate()
 
   function handleChange(e) {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
   }
 
   async function handleSubmit(e) {
@@ -288,6 +290,36 @@ function CreateInternshipPage() {
             <p className="mt-1.5 text-xs text-slate-400">
               Note: documented visa details establish transparent expectations for students, but do not imply formal government sponsorship guarantees.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/70 transition">
+              <input
+                type="checkbox"
+                name="visaRequired"
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                checked={form.visaRequired}
+                onChange={handleChange}
+              />
+              <div>
+                <span className="font-semibold text-xs text-slate-800 block">Visa Required / Supported</span>
+                <span className="text-[11px] text-slate-500">Check if international candidates will need work authorization or visa assistance.</span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/70 transition">
+              <input
+                type="checkbox"
+                name="relocationRequired"
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                checked={form.relocationRequired}
+                onChange={handleChange}
+              />
+              <div>
+                <span className="font-semibold text-xs text-slate-800 block">Relocation Required</span>
+                <span className="text-[11px] text-slate-500">Check if the candidate must physically relocate to the role's host location.</span>
+              </div>
+            </label>
           </div>
         </Section>
 

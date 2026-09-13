@@ -21,3 +21,16 @@ export const uploadResume = (file) => {
  */
 export const getStudentProfile = () =>
   api.get('/api/student/profile')
+
+/**
+ * Fetch the current student's cross-border preferences.
+ */
+export const getStudentPreferences = () =>
+  api.get('/api/student/preferences')
+
+/**
+ * Update the current student's cross-border preferences.
+ */
+export const updateStudentPreferences = (data) =>
+  api.put('/api/student/preferences', data)
+

@@ -70,6 +70,20 @@ public class StudentController {
         return studentService.getProfile(authentication.getName());
     }
 
+    // ── Preferences ───────────────────────────────────────────────────────────
+
+    @GetMapping("/preferences")
+    public com.internship.platform.dto.StudentPreferenceResponse getPreferences(Authentication authentication) {
+        return studentService.getPreferences(authentication.getName());
+    }
+
+    @org.springframework.web.bind.annotation.PutMapping("/preferences")
+    public com.internship.platform.dto.StudentPreferenceResponse updatePreferences(
+            @org.springframework.web.bind.annotation.RequestBody com.internship.platform.dto.StudentPreferenceRequest request,
+            Authentication authentication) {
+        return studentService.updatePreferences(authentication.getName(), request);
+    }
+
     // ── Internship search ─────────────────────────────────────────────────────
 
     /**

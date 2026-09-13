@@ -5,6 +5,7 @@ import { applyToInternship, checkApplication } from '../../api/applications.js'
 import { useAuth } from '../../auth/AuthContext.jsx'
 import RiskBadge from '../../components/RiskBadge.jsx'
 import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
+import TrustProfileCard from '../../components/TrustProfileCard.jsx'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
 
 const WORK_MODE_COLORS = {
@@ -133,6 +134,7 @@ function InternshipDetailPage() {
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <span className="text-base font-semibold text-slate-700">{internship.companyName}</span>
               <CompanyVerificationBadge
+                verificationStatus={internship.companyVerificationStatus}
                 verified={internship.companyEmailVerified}
                 personalEmail={internship.companyPersonalEmail}
                 websiteDomainMatch={internship.companyWebsiteDomainMatch}
@@ -164,10 +166,10 @@ function InternshipDetailPage() {
         {/* Quick-facts strip */}
         <div className="flex flex-wrap gap-2.5 pt-2">
           <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${workModeClass}`}>
-            {internship.workMode}
+            💼 {internship.workMode}
           </span>
           <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-            📍 {internship.country}{internship.city ? `, ${internship.city}` : ''}
+            🌍 {internship.country}{internship.city ? `, ${internship.city}` : ''}
           </span>
           {internship.duration && (
             <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
@@ -177,6 +179,24 @@ function InternshipDetailPage() {
           {internship.stipend != null && (
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               💰 {internship.stipend} {internship.currency ?? ''} / month
+            </span>
+          )}
+          {internship.visaRequired ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              🛂 Visa Required / Supported
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+              🛂 No Visa Needed
+            </span>
+          )}
+          {internship.relocationRequired ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+              🛫 Relocation Required
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+              🛫 No Relocation
             </span>
           )}
           {internship.deadline && (
@@ -194,8 +214,25 @@ function InternshipDetailPage() {
           <Field label="Key Skills & Qualifications" value={internship.requiredSkills} />
           <Field label="Candidate Eligibility" value={internship.eligibility} />
           <Field label="Work Authorization & Visa Support" value={internship.visaInformation} />
+          <Field
+            label="Relocation Information"
+            value={internship.relocationRequired ? 'This position requires relocating to ' + internship.country + (internship.city ? ' (' + internship.city + ')' : '') + '.' : 'No physical relocation is required for this role.'}
+          />
         </dl>
       </div>
+
+      {/* Internship Trust Profile Section */}
+      <TrustProfileCard
+        riskLevel={internship.riskLevel}
+        riskScore={internship.riskScore}
+        riskReasons={internship.riskReasons}
+        companyEmailVerified={internship.companyEmailVerified}
+        companyPersonalEmail={internship.companyPersonalEmail}
+        companyWebsiteDomainMatch={internship.companyWebsiteDomainMatch}
+        companyWebsite={internship.companyWebsite}
+        companyVerificationStatus={internship.companyVerificationStatus}
+        internship={internship}
+      />
 
       {/* Application Action Section */}
       <div className="card-base p-6">

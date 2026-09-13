@@ -21,6 +21,8 @@ public class InternshipSearchParams {
      * i.e., the company has described visa support. Does not guarantee visa sponsorship.
      */
     private Boolean visaRequired;
+    private Boolean relocationRequired;
+    private String preferredCountries;
 
     public String getKeyword() { return keyword; }
     public void setKeyword(String keyword) { this.keyword = keyword; }
@@ -45,4 +47,10 @@ public class InternshipSearchParams {
 
     public Boolean getVisaRequired() { return visaRequired; }
     public void setVisaRequired(Boolean visaRequired) { this.visaRequired = visaRequired; }
+
+    public Boolean getRelocationRequired() { return relocationRequired; }
+    public void setRelocationRequired(Boolean relocationRequired) { this.relocationRequired = relocationRequired; }
+
+    public String getPreferredCountries() { return preferredCountries; }
+    public void setPreferredCountries(String preferredCountries) { this.preferredCountries = preferredCountries; }
 }

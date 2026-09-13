@@ -33,11 +33,21 @@ public class InternshipRequest {
 
     private String visaInformation;
 
+    private Boolean visaRequired;
+
+    private Boolean relocationRequired;
+
     private LocalDate deadline;
 
     // Only used on update; create always sets OPEN.
     @Pattern(regexp = "OPEN|CLOSED", message = "Status must be OPEN or CLOSED")
     private String status;
+
+    public Boolean getVisaRequired() { return visaRequired; }
+    public void setVisaRequired(Boolean visaRequired) { this.visaRequired = visaRequired; }
+
+    public Boolean getRelocationRequired() { return relocationRequired; }
+    public void setRelocationRequired(Boolean relocationRequired) { this.relocationRequired = relocationRequired; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

@@ -17,7 +17,9 @@ import com.internship.platform.exception.ApiException;
 import com.internship.platform.repository.ApplicationRepository;
 import com.internship.platform.repository.InternshipRepository;
 import com.internship.platform.repository.RecommendationRepository;
+import com.internship.platform.entity.StudentPreference;
 import com.internship.platform.repository.RiskAssessmentRepository;
+import com.internship.platform.repository.StudentPreferenceRepository;
 import com.internship.platform.repository.StudentRepository;
 import com.internship.platform.repository.UserRepository;
 import com.internship.platform.util.InternshipSpecification;
@@ -58,6 +60,7 @@ public class RecommendationService {
 
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
+    private final StudentPreferenceRepository studentPreferenceRepository;
     private final InternshipRepository internshipRepository;
     private final RecommendationRepository recommendationRepository;
     private final RiskAssessmentRepository riskAssessmentRepository;
@@ -68,6 +71,7 @@ public class RecommendationService {
     public RecommendationService(
             UserRepository userRepository,
             StudentRepository studentRepository,
+            StudentPreferenceRepository studentPreferenceRepository,
             InternshipRepository internshipRepository,
             RecommendationRepository recommendationRepository,
             RiskAssessmentRepository riskAssessmentRepository,
@@ -75,6 +79,7 @@ public class RecommendationService {
             AiServiceClient aiServiceClient) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
+        this.studentPreferenceRepository = studentPreferenceRepository;
         this.internshipRepository = internshipRepository;
         this.recommendationRepository = recommendationRepository;
         this.riskAssessmentRepository = riskAssessmentRepository;
@@ -88,8 +93,19 @@ public class RecommendationService {
             InternshipRepository internshipRepository,
             RecommendationRepository recommendationRepository,
             RiskAssessmentRepository riskAssessmentRepository,
+            ApplicationRepository applicationRepository,
             AiServiceClient aiServiceClient) {
-        this(userRepository, studentRepository, internshipRepository, recommendationRepository, riskAssessmentRepository, null, aiServiceClient);
+        this(userRepository, studentRepository, null, internshipRepository, recommendationRepository, riskAssessmentRepository, applicationRepository, aiServiceClient);
+    }
+
+    public RecommendationService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            InternshipRepository internshipRepository,
+            RecommendationRepository recommendationRepository,
+            RiskAssessmentRepository riskAssessmentRepository,
+            AiServiceClient aiServiceClient) {
+        this(userRepository, studentRepository, null, internshipRepository, recommendationRepository, riskAssessmentRepository, null, aiServiceClient);
     }
 
     /**
@@ -112,13 +128,16 @@ public class RecommendationService {
         }
 
         Instant generatedAt = deduped.get(0).getCreatedAt();
+        StudentPreference pref = studentPreferenceRepository != null
+                ? studentPreferenceRepository.findByStudent(student).orElse(null)
+                : null;
         List<RecommendationItemResponse> items = new ArrayList<>();
         for (int i = 0; i < deduped.size(); i++) {
             Recommendation rec = deduped.get(i);
             com.internship.platform.entity.RiskAssessment risk = rec.getInternship() != null
                     ? riskAssessmentRepository.findTopByInternshipOrderByCreatedAtDesc(rec.getInternship()).orElse(null)
                     : null;
-            RecommendationItemResponse item = RecommendationItemResponse.from(rec, risk);
+            RecommendationItemResponse item = RecommendationItemResponse.from(rec, risk, pref);
             item.setRanking(i + 1);
             items.add(item);
         }
@@ -180,12 +199,15 @@ public class RecommendationService {
         resp.setGoodMatchCount(goodCount);
 
         List<RecommendationItemResponse> topItems = new ArrayList<>();
+        StudentPreference pref = studentPreferenceRepository != null
+                ? studentPreferenceRepository.findByStudent(student).orElse(null)
+                : null;
         for (int i = 0; i < Math.min(3, deduped.size()); i++) {
             Recommendation rec = deduped.get(i);
             com.internship.platform.entity.RiskAssessment risk = rec.getInternship() != null
                     ? riskAssessmentRepository.findTopByInternshipOrderByCreatedAtDesc(rec.getInternship()).orElse(null)
                     : null;
-            RecommendationItemResponse item = RecommendationItemResponse.from(rec, risk);
+            RecommendationItemResponse item = RecommendationItemResponse.from(rec, risk, pref);
             item.setRanking(i + 1);
             topItems.add(item);
         }
@@ -289,12 +311,15 @@ public class RecommendationService {
 
         recommendationRepository.saveAll(savedList);
 
+        StudentPreference pref = studentPreferenceRepository != null
+                ? studentPreferenceRepository.findByStudent(student).orElse(null)
+                : null;
         List<RecommendationItemResponse> responseItems = savedList.stream()
                 .map(rec -> {
                     com.internship.platform.entity.RiskAssessment risk = rec.getInternship() != null
                             ? riskAssessmentRepository.findTopByInternshipOrderByCreatedAtDesc(rec.getInternship()).orElse(null)
                             : null;
-                    return RecommendationItemResponse.from(rec, risk);
+                    return RecommendationItemResponse.from(rec, risk, pref);
                 })
                 .toList();
 

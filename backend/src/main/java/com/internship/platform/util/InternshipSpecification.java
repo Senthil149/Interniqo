@@ -68,13 +68,19 @@ public final class InternshipSpecification {
                         params.getCurrency().trim().toLowerCase()));
             }
 
-            // Hard filter 8: visa support — when true, only show postings that have
-            // visa_information text. This proves the company has documented visa support,
-            // NOT that it guarantees visa sponsorship.
+            // Hard filter 8: visa support — when true, matches postings with documented visa info or visaRequired
             if (Boolean.TRUE.equals(params.getVisaRequired())) {
-                predicates.add(cb.and(
-                        cb.isNotNull(root.get("visaInformation")),
-                        cb.notEqual(root.get("visaInformation"), "")));
+                predicates.add(cb.or(
+                        cb.isTrue(root.get("visaRequired")),
+                        cb.and(
+                                cb.isNotNull(root.get("visaInformation")),
+                                cb.notEqual(root.get("visaInformation"), ""))
+                ));
+            }
+
+            // Hard filter 9: relocation requirement
+            if (params.getRelocationRequired() != null) {
+                predicates.add(cb.equal(root.get("relocationRequired"), params.getRelocationRequired()));
             }
 
             // Soft text filter: keyword matched against title (case-insensitive LIKE)

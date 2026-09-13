@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateRecommendations, getRecommendations } from '../../api/recommendations.js'
+import { getStudentPreferences, updateStudentPreferences } from '../../api/student.js'
 import RiskBadge from '../../components/RiskBadge.jsx'
 import CompanyVerificationBadge from '../../components/CompanyVerificationBadge.jsx'
 import SkeletonLoader from '../../components/SkeletonLoader.jsx'
@@ -25,6 +26,33 @@ const EMPTY_FILTERS = {
   minStipend: '',
   currency: '',
   visaRequired: false,
+  relocationRequired: false,
+}
+
+function MatchStatusBadge({ status }) {
+  if (!status || status === 'NOT SPECIFIED') {
+    return <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Not Specified</span>
+  }
+  if (status === 'MATCHED') {
+    return <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200">✓ MATCHED</span>
+  }
+  if (status === 'PARTIALLY MATCHED') {
+    return <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">⚠ PARTIAL</span>
+  }
+  return <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">✕ NOT MATCHED</span>
+}
+
+function CrossBorderItem({ icon, label, status, detail }) {
+  return (
+    <div className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0 text-xs">
+      <div className="flex items-center gap-1.5">
+        <span>{icon}</span>
+        <span className="font-semibold text-slate-700">{label}:</span>
+        {detail && <span className="text-slate-500 font-normal">{detail}</span>}
+      </div>
+      <MatchStatusBadge status={status} />
+    </div>
+  )
 }
 
 /**
@@ -154,6 +182,7 @@ function RecommendationCard({ rec }) {
               <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                 <span className="text-sm font-medium text-slate-700">{rec.companyName}</span>
                 <CompanyVerificationBadge
+                  status={rec.companyVerificationStatus}
                   verified={rec.companyEmailVerified}
                   personalEmail={rec.companyPersonalEmail}
                   websiteDomainMatch={rec.companyWebsiteDomainMatch}
@@ -167,12 +196,13 @@ function RecommendationCard({ rec }) {
           <SignalBadge score={rec.similarityScore} />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        {/* Cross-border & key role badges */}
+        <div className="mt-4 flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${workModeClass}`}>
-            {rec.workMode}
+            💼 {rec.workMode}
           </span>
-          <span className="rounded-full border border-warm-border bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
-            📍 {rec.country}{rec.city ? `, ${rec.city}` : ''}
+          <span className="rounded-full border border-warm-border bg-slate-50 px-2.5 py-0.5 text-xs text-slate-700">
+            🌍 {rec.country}{rec.city ? `, ${rec.city}` : ''}
           </span>
           {rec.duration && (
             <span className="rounded-full border border-warm-border bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
@@ -184,9 +214,22 @@ function RecommendationCard({ rec }) {
               💰 {rec.stipend} {rec.currency ?? ''}/mo
             </span>
           )}
-          {rec.visaInformation && (
+          {rec.visaRequired ? (
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+              🛂 Visa Required / Sponsored
+            </span>
+          ) : rec.visaInformation ? (
             <span className="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700">
               ✓ Visa Info Provided
+            </span>
+          ) : null}
+          {rec.relocationRequired ? (
+            <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">
+              🛫 Relocation Required
+            </span>
+          ) : (
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-500">
+              No Relocation
             </span>
           )}
         </div>
@@ -258,11 +301,67 @@ function RecommendationCard({ rec }) {
                   </div>
                 )}
 
+                {/* Cross-Border & Preference Alignment Breakdown */}
+                {rec.crossBorderBreakdown && (
+                  <div className="space-y-2 pt-2 border-t border-slate-200/60">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        CROSS-BORDER &amp; PREFERENCE ALIGNMENT
+                      </span>
+                      <span className="text-[10px] text-slate-400">Match Status</span>
+                    </div>
+                    <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/60 divide-y divide-slate-100">
+                      <CrossBorderItem
+                        icon="🌍"
+                        label="Country"
+                        status={rec.crossBorderBreakdown.countryMatch}
+                        detail={rec.crossBorderBreakdown.countryDetail}
+                      />
+                      <CrossBorderItem
+                        icon="💼"
+                        label="Work Mode"
+                        status={rec.crossBorderBreakdown.workModeMatch}
+                        detail={rec.crossBorderBreakdown.workModeDetail}
+                      />
+                      <CrossBorderItem
+                        icon="⏱"
+                        label="Duration"
+                        status={rec.crossBorderBreakdown.durationMatch}
+                        detail={rec.crossBorderBreakdown.durationDetail}
+                      />
+                      <CrossBorderItem
+                        icon="💰"
+                        label="Stipend"
+                        status={rec.crossBorderBreakdown.stipendMatch}
+                        detail={rec.crossBorderBreakdown.stipendDetail}
+                      />
+                      <CrossBorderItem
+                        icon="🛂"
+                        label="Visa Support"
+                        status={rec.crossBorderBreakdown.visaMatch}
+                        detail={rec.crossBorderBreakdown.visaDetail}
+                      />
+                      <CrossBorderItem
+                        icon="🛫"
+                        label="Relocation"
+                        status={rec.crossBorderBreakdown.relocationMatch}
+                        detail={rec.crossBorderBreakdown.relocationDetail}
+                      />
+                      <CrossBorderItem
+                        icon="🎯"
+                        label="Skills Fit"
+                        status={rec.crossBorderBreakdown.skillMatch}
+                        detail={rec.crossBorderBreakdown.skillDetail}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Preference Matches */}
                 {rec.preferenceMatches && rec.preferenceMatches.length > 0 && (
                   <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      PREFERENCE MATCHES
+                      PREFERENCE HIGHLIGHTS
                     </span>
                     <div className="space-y-1 text-slate-700">
                       {rec.preferenceMatches.map((pref, idx) => (
@@ -364,6 +463,208 @@ function RecommendationCard({ rec }) {
   )
 }
 
+function PreferencesModal({ isOpen, onClose, onSaved }) {
+  const [prefForm, setPrefForm] = useState({
+    location: '',
+    preferredCountries: '',
+    workMode: 'REMOTE',
+    relocationPreference: 'WILLING_TO_RELOCATE',
+    minimumStipend: '',
+    duration: '',
+    visaRequired: false,
+  })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    if (!isOpen) return
+    let mounted = true
+    setLoading(true)
+    setErr('')
+    setMsg('')
+    getStudentPreferences()
+      .then(({ data }) => {
+        if (mounted && data) {
+          setPrefForm({
+            location: data.location || '',
+            preferredCountries: data.preferredCountries || '',
+            workMode: data.workMode || 'REMOTE',
+            relocationPreference: data.relocationPreference ? 'WILLING_TO_RELOCATE' : 'REMOTE_ONLY',
+            minimumStipend: data.minimumStipend ?? '',
+            duration: data.duration || '',
+            visaRequired: Boolean(data.visaRequired),
+          })
+        }
+      })
+      .catch(() => {
+        // defaults remain
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => { mounted = false }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setPrefForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setErr('')
+    try {
+      await updateStudentPreferences({
+        preferredCountries: prefForm.preferredCountries,
+        location: prefForm.location || null,
+        workMode: prefForm.workMode,
+        duration: prefForm.duration || null,
+        minimumStipend: prefForm.minimumStipend !== '' ? Number(prefForm.minimumStipend) : null,
+        relocationPreference: prefForm.relocationPreference === 'WILLING_TO_RELOCATE',
+        visaRequired: Boolean(prefForm.visaRequired),
+      })
+      setMsg('Preferences updated successfully!')
+      setTimeout(() => {
+        onSaved()
+        onClose()
+      }, 600)
+    } catch {
+      setErr('Failed to save preferences. Please check inputs.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
+      <div className="card-base w-full max-w-lg bg-white p-6 shadow-2xl space-y-4">
+        <div className="flex items-center justify-between border-b border-warm-border pb-3">
+          <div>
+            <h3 className="font-heading text-lg font-bold text-slate-900">Your International Preferences</h3>
+            <p className="text-xs text-slate-500">Cross-border recommendations evaluate these preferences for match explanation.</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+        </div>
+
+        {msg && <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl">{msg}</div>}
+        {err && <div className="p-3 bg-danger-50 border border-danger-200 text-danger-800 text-xs rounded-xl">{err}</div>}
+
+        {loading ? (
+          <div className="py-8 text-center text-sm text-slate-500">Loading preferences…</div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-3">
+            <div>
+              <label className={LABEL} htmlFor="pref-countries">Preferred Countries (comma-separated)</label>
+              <input
+                id="pref-countries"
+                name="preferredCountries"
+                className={INPUT}
+                placeholder="e.g. Germany, Singapore, United States, India"
+                value={prefForm.preferredCountries}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL} htmlFor="pref-mode">Work Mode</label>
+                <select
+                  id="pref-mode"
+                  name="workMode"
+                  className={INPUT}
+                  value={prefForm.workMode}
+                  onChange={handleChange}
+                >
+                  <option value="REMOTE">Remote</option>
+                  <option value="HYBRID">Hybrid</option>
+                  <option value="ONSITE">Onsite</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={LABEL} htmlFor="pref-relo">Relocation Willingness</label>
+                <select
+                  id="pref-relo"
+                  name="relocationPreference"
+                  className={INPUT}
+                  value={prefForm.relocationPreference}
+                  onChange={handleChange}
+                >
+                  <option value="WILLING_TO_RELOCATE">Willing to Relocate</option>
+                  <option value="REMOTE_ONLY">Remote Only (No relocation)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL} htmlFor="pref-stipend">Target Min Stipend / mo</label>
+                <input
+                  id="pref-stipend"
+                  name="minimumStipend"
+                  type="number"
+                  min="0"
+                  className={INPUT}
+                  placeholder="e.g. 500"
+                  value={prefForm.minimumStipend}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <label className={LABEL} htmlFor="pref-duration">Available Duration</label>
+                <input
+                  id="pref-duration"
+                  name="duration"
+                  className={INPUT}
+                  placeholder="e.g. 3 months, 6 months"
+                  value={prefForm.duration}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="visaRequired"
+                  className="h-4 w-4 rounded border-warm-border text-primary-700 focus:ring-primary-600"
+                  checked={prefForm.visaRequired}
+                  onChange={handleChange}
+                />
+                Prefer roles with Visa Sponsorship / Guidance
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-warm-border">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <MotionButton
+                type="submit"
+                variant="primary"
+                disabled={saving}
+                className="text-xs"
+              >
+                {saving ? 'Saving…' : 'Save Preferences'}
+              </MotionButton>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function RecommendationsPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -373,6 +674,7 @@ export function RecommendationsPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [showPreferences, setShowPreferences] = useState(false)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
 
   useEffect(() => {
@@ -463,10 +765,19 @@ export function RecommendationsPage() {
             <MotionButton
               type="button"
               variant="secondary"
+              onClick={() => setShowPreferences(true)}
+              className="text-xs flex items-center gap-1"
+            >
+              <span>⚙️</span>
+              <span>Preferences</span>
+            </MotionButton>
+            <MotionButton
+              type="button"
+              variant="secondary"
               onClick={() => setShowFilters(!showFilters)}
               className="text-xs"
             >
-              {showFilters ? 'Hide Filter Panel' : 'Filter Criteria'}
+              {showFilters ? 'Hide Filters' : 'Filter Criteria'}
             </MotionButton>
             <MotionButton
               type="button"
@@ -494,6 +805,12 @@ export function RecommendationsPage() {
           </div>
         )}
       </div>
+
+      <PreferencesModal
+        isOpen={showPreferences}
+        onClose={() => setShowPreferences(false)}
+        onSaved={handleGenerate}
+      />
 
       {/* Error alert */}
       {error && (
@@ -569,7 +886,7 @@ export function RecommendationsPage() {
                 />
               </div>
 
-              <div className="flex items-center pt-6">
+              <div className="flex items-center pt-6 gap-4">
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -579,6 +896,16 @@ export function RecommendationsPage() {
                     onChange={handleFilterChange}
                   />
                   Require Visa Info
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="relocationRequired"
+                    className="h-4 w-4 rounded border-warm-border text-primary-700 focus:ring-primary-600"
+                    checked={filters.relocationRequired || false}
+                    onChange={handleFilterChange}
+                  />
+                  Require Relocation
                 </label>
               </div>
             </div>

@@ -66,6 +66,12 @@ public class Internship {
     @Column(name = "visa_information", columnDefinition = "TEXT")
     private String visaInformation;
 
+    @Column(name = "visa_required", nullable = false)
+    private boolean visaRequired;
+
+    @Column(name = "relocation_required", nullable = false)
+    private boolean relocationRequired;
+
     private LocalDate deadline;
 
     @Column(nullable = false, length = 32)
@@ -181,6 +187,22 @@ public class Internship {
 
     public void setDeadline(LocalDate deadline) {
         this.deadline = deadline;
+    }
+
+    public boolean isVisaRequired() {
+        return visaRequired;
+    }
+
+    public void setVisaRequired(boolean visaRequired) {
+        this.visaRequired = visaRequired;
+    }
+
+    public boolean isRelocationRequired() {
+        return relocationRequired;
+    }
+
+    public void setRelocationRequired(boolean relocationRequired) {
+        this.relocationRequired = relocationRequired;
     }
 
     public String getStatus() {

@@ -46,6 +46,9 @@ public class Company {
     @Column(name = "website_domain_match", nullable = false)
     private boolean websiteDomainMatch;
 
+    @Column(name = "verification_status", nullable = false, length = 32)
+    private String verificationStatus = "UNVERIFIED";
+
     public Long getId() {
         return id;
     }
@@ -124,5 +127,13 @@ public class Company {
 
     public void setWebsiteDomainMatch(boolean websiteDomainMatch) {
         this.websiteDomainMatch = websiteDomainMatch;
+    }
+
+    public String getVerificationStatus() {
+        return verificationStatus;
+    }
+
+    public void setVerificationStatus(String verificationStatus) {
+        this.verificationStatus = verificationStatus;
     }
 }

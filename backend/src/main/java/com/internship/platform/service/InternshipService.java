@@ -165,6 +165,8 @@ public class InternshipService {
                 ? request.getCurrency().trim().toUpperCase() : null);
         internship.setEligibility(request.getEligibility());
         internship.setVisaInformation(request.getVisaInformation());
+        internship.setVisaRequired(Boolean.TRUE.equals(request.getVisaRequired()));
+        internship.setRelocationRequired(Boolean.TRUE.equals(request.getRelocationRequired()));
         internship.setDeadline(request.getDeadline());
     }
 }

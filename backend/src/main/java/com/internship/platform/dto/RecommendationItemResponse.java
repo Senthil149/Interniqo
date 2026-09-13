@@ -22,6 +22,8 @@ public class RecommendationItemResponse {
     private String currency;
     private String requiredSkills;
     private String visaInformation;
+    private boolean visaRequired;
+    private boolean relocationRequired;
     private LocalDate deadline;
     private String status;
     private Integer riskScore;
@@ -31,6 +33,7 @@ public class RecommendationItemResponse {
     private Boolean companyPersonalEmail;
     private Boolean companyWebsiteDomainMatch;
     private String companyWebsite;
+    private String companyVerificationStatus;
 
     // Explainable AI & Skill-gap fields
     private java.util.List<String> matchingStrengths;
@@ -39,12 +42,20 @@ public class RecommendationItemResponse {
     private java.util.List<String> preferenceMatches;
     private String skillGapMessage;
     private String fitLevel;
+    private CrossBorderMatchBreakdown crossBorderBreakdown;
 
     public static RecommendationItemResponse from(Recommendation rec) {
-        return from(rec, null);
+        return from(rec, null, null);
     }
 
     public static RecommendationItemResponse from(Recommendation rec, com.internship.platform.entity.RiskAssessment risk) {
+        return from(rec, risk, null);
+    }
+
+    public static RecommendationItemResponse from(
+            Recommendation rec,
+            com.internship.platform.entity.RiskAssessment risk,
+            com.internship.platform.entity.StudentPreference preference) {
         RecommendationItemResponse resp = new RecommendationItemResponse();
         resp.setId(rec.getId());
         resp.setRanking(rec.getRanking());
@@ -60,6 +71,7 @@ public class RecommendationItemResponse {
                 resp.setCompanyPersonalEmail(in.getCompany().isPersonalEmail());
                 resp.setCompanyWebsiteDomainMatch(in.getCompany().isWebsiteDomainMatch());
                 resp.setCompanyWebsite(in.getCompany().getWebsite());
+                resp.setCompanyVerificationStatus(in.getCompany().getVerificationStatus());
             }
             resp.setCountry(in.getCountry());
             resp.setCity(in.getCity());
@@ -69,6 +81,8 @@ public class RecommendationItemResponse {
             resp.setCurrency(in.getCurrency());
             resp.setRequiredSkills(in.getRequiredSkills());
             resp.setVisaInformation(in.getVisaInformation());
+            resp.setVisaRequired(in.isVisaRequired());
+            resp.setRelocationRequired(in.isRelocationRequired());
             resp.setDeadline(in.getDeadline());
             resp.setStatus(in.getStatus());
         }
@@ -86,13 +100,15 @@ public class RecommendationItemResponse {
 
         if (rec.getStudent() != null && rec.getInternship() != null) {
             com.internship.platform.util.SkillAnalysisUtil.AnalysisResult analysis =
-                    com.internship.platform.util.SkillAnalysisUtil.analyze(rec.getStudent(), rec.getInternship(), rec.getSimilarityScore());
+                    com.internship.platform.util.SkillAnalysisUtil.analyze(
+                            rec.getStudent(), preference, rec.getInternship(), rec.getSimilarityScore());
             resp.setMatchingStrengths(analysis.getMatchingStrengths());
             resp.setMatchedSkills(analysis.getMatchedSkills());
             resp.setMissingSkills(analysis.getMissingSkills());
             resp.setPreferenceMatches(analysis.getPreferenceMatches());
             resp.setSkillGapMessage(analysis.getSkillGapMessage());
             resp.setFitLevel(analysis.getFitLevel());
+            resp.setCrossBorderBreakdown(analysis.getCrossBorderBreakdown());
         } else {
             resp.setFitLevel(com.internship.platform.util.SkillAnalysisUtil.getFitLevel(rec.getSimilarityScore()));
         }
@@ -330,5 +346,37 @@ public class RecommendationItemResponse {
 
     public void setFitLevel(String fitLevel) {
         this.fitLevel = fitLevel;
+    }
+
+    public boolean isVisaRequired() {
+        return visaRequired;
+    }
+
+    public void setVisaRequired(boolean visaRequired) {
+        this.visaRequired = visaRequired;
+    }
+
+    public boolean isRelocationRequired() {
+        return relocationRequired;
+    }
+
+    public void setRelocationRequired(boolean relocationRequired) {
+        this.relocationRequired = relocationRequired;
+    }
+
+    public String getCompanyVerificationStatus() {
+        return companyVerificationStatus;
+    }
+
+    public void setCompanyVerificationStatus(String companyVerificationStatus) {
+        this.companyVerificationStatus = companyVerificationStatus;
+    }
+
+    public CrossBorderMatchBreakdown getCrossBorderBreakdown() {
+        return crossBorderBreakdown;
+    }
+
+    public void setCrossBorderBreakdown(CrossBorderMatchBreakdown crossBorderBreakdown) {
+        this.crossBorderBreakdown = crossBorderBreakdown;
     }
 }

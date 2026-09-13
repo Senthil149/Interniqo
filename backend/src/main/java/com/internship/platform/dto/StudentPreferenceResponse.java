@@ -1,54 +1,41 @@
-package com.internship.platform.entity;
+package com.internship.platform.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import com.internship.platform.entity.StudentPreference;
 
 import java.math.BigDecimal;
 
-@Entity
-@Table(name = "student_preferences")
-public class StudentPreference {
+public class StudentPreferenceResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "student_id", nullable = false)
-    private Student student;
-
-    @Column(length = 128)
+    private Long studentId;
     private String country;
-
+    private String preferredCountries;
     private String location;
-
-    @Column(name = "work_mode", length = 64)
     private String workMode;
-
-    @Column(length = 64)
     private String duration;
-
-    @Column(name = "minimum_stipend", precision = 12, scale = 2)
     private BigDecimal minimumStipend;
-
-    @Column(length = 8)
     private String currency;
-
-    @Column(name = "visa_required", nullable = false)
     private boolean visaRequired;
-
-    @Column(name = "relocation_preference", nullable = false)
     private boolean relocationPreference;
 
-    @Column(name = "preferred_countries", columnDefinition = "TEXT")
-    private String preferredCountries;
+    public static StudentPreferenceResponse from(StudentPreference pref) {
+        if (pref == null) return null;
+        StudentPreferenceResponse resp = new StudentPreferenceResponse();
+        resp.setId(pref.getId());
+        if (pref.getStudent() != null) {
+            resp.setStudentId(pref.getStudent().getId());
+        }
+        resp.setCountry(pref.getCountry());
+        resp.setPreferredCountries(pref.getPreferredCountries());
+        resp.setLocation(pref.getLocation());
+        resp.setWorkMode(pref.getWorkMode());
+        resp.setDuration(pref.getDuration());
+        resp.setMinimumStipend(pref.getMinimumStipend());
+        resp.setCurrency(pref.getCurrency());
+        resp.setVisaRequired(pref.isVisaRequired());
+        resp.setRelocationPreference(pref.isRelocationPreference());
+        return resp;
+    }
 
     public Long getId() {
         return id;
@@ -58,12 +45,12 @@ public class StudentPreference {
         this.id = id;
     }
 
-    public Student getStudent() {
-        return student;
+    public Long getStudentId() {
+        return studentId;
     }
 
-    public void setStudent(Student student) {
-        this.student = student;
+    public void setStudentId(Long studentId) {
+        this.studentId = studentId;
     }
 
     public String getCountry() {
@@ -72,6 +59,14 @@ public class StudentPreference {
 
     public void setCountry(String country) {
         this.country = country;
+    }
+
+    public String getPreferredCountries() {
+        return preferredCountries;
+    }
+
+    public void setPreferredCountries(String preferredCountries) {
+        this.preferredCountries = preferredCountries;
     }
 
     public String getLocation() {
@@ -128,13 +123,5 @@ public class StudentPreference {
 
     public void setRelocationPreference(boolean relocationPreference) {
         this.relocationPreference = relocationPreference;
-    }
-
-    public String getPreferredCountries() {
-        return preferredCountries;
-    }
-
-    public void setPreferredCountries(String preferredCountries) {
-        this.preferredCountries = preferredCountries;
     }
 }

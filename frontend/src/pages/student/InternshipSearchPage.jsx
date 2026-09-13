@@ -20,6 +20,7 @@ const EMPTY_FILTERS = {
   minStipend: '',
   currency: '',
   visaRequired: false,
+  relocationRequired: false,
 }
 
 const WORK_MODE_COLORS = {
@@ -51,13 +52,14 @@ function InternshipCard({ internship }) {
             {internship.title}
           </Link>
           <span className={`flex-shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${workModeClass}`}>
-            {internship.workMode}
+            💼 {internship.workMode}
           </span>
         </div>
 
         <div className="mb-3 flex flex-wrap items-center gap-1.5">
           <span className="text-sm font-medium text-slate-700">{internship.companyName}</span>
           <CompanyVerificationBadge
+            verificationStatus={internship.companyVerificationStatus}
             verified={internship.companyEmailVerified}
             personalEmail={internship.companyPersonalEmail}
             websiteDomainMatch={internship.companyWebsiteDomainMatch}
@@ -66,30 +68,39 @@ function InternshipCard({ internship }) {
           />
         </div>
 
-        <div className="space-y-1.5 text-xs text-slate-500">
-          <p className="flex items-center gap-1.5">
-            <span>📍</span>
-            <span>{internship.country}{internship.city ? `, ${internship.city}` : ''}</span>
-          </p>
+        <div className="flex flex-wrap gap-1.5 text-xs text-slate-600 mb-2">
+          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 font-medium">
+            🌍 {internship.country}{internship.city ? `, ${internship.city}` : ''}
+          </span>
           {internship.duration && (
-            <p className="flex items-center gap-1.5">
-              <span>⏱</span>
-              <span>{internship.duration}</span>
-            </p>
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 font-medium">
+              ⏱ {internship.duration}
+            </span>
           )}
           {internship.stipend != null && (
-            <p className="flex items-center gap-1.5 text-slate-700 font-medium">
-              <span>💰</span>
-              <span>{internship.stipend} {internship.currency ?? ''} <span className="text-slate-400 font-normal">/ month</span></span>
-            </p>
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-semibold text-emerald-700">
+              💰 {internship.stipend} {internship.currency ?? ''}/mo
+            </span>
           )}
-          {internship.deadline && (
-            <p className="text-slate-400">⏳ Deadline: {internship.deadline}</p>
+          {internship.visaRequired ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 font-medium text-blue-700">
+              🛂 Visa Required / Supported
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 font-medium text-slate-600">
+              🛂 No Visa Needed
+            </span>
           )}
-          {internship.visaInformation && (
-            <p className="font-semibold text-blue-600">✓ Visa info provided</p>
+          {internship.relocationRequired && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 font-medium text-amber-800">
+              🛫 Relocation Required
+            </span>
           )}
         </div>
+
+        {internship.deadline && (
+          <p className="text-[11px] text-slate-400">⏳ Deadline: {internship.deadline}</p>
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
@@ -274,18 +285,34 @@ function InternshipSearchPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  id="visaRequired"
-                  name="visaRequired"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  checked={filters.visaRequired}
-                  onChange={handleFilterChange}
-                />
-                <label htmlFor="visaRequired" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                  Visa info required
-                </label>
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="visaRequired"
+                    name="visaRequired"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    checked={filters.visaRequired}
+                    onChange={handleFilterChange}
+                  />
+                  <label htmlFor="visaRequired" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    Visa info required
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    id="relocationRequired"
+                    name="relocationRequired"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    checked={filters.relocationRequired}
+                    onChange={handleFilterChange}
+                  />
+                  <label htmlFor="relocationRequired" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    Relocation required
+                  </label>
+                </div>
               </div>
             </div>
 

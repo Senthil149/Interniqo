@@ -311,8 +311,9 @@ public class EmailVerificationService {
         if (verification.getCompany() != null) {
             Company company = verification.getCompany();
             company.setEmailVerified(true);
+            company.setVerificationStatus("EMAIL_VERIFIED");
             companyRepository.save(company);
-            log.info("Successfully marked email_verified=true for company ID {} ({})",
+            log.info("Successfully marked email_verified=true and verificationStatus='EMAIL_VERIFIED' for company ID {} ({})",
                     company.getId(), company.getEmail());
         } else if (verification.getUser() != null) {
             log.info("Successfully verified email for user ID {} ({})",
@@ -388,8 +389,9 @@ public class EmailVerificationService {
             emailVerificationRepository.save(verification);
 
             company.setEmailVerified(true);
+            company.setVerificationStatus("EMAIL_VERIFIED");
             companyRepository.save(company);
-            log.info("Successfully verified company email for company ID {} ({})", company.getId(), company.getEmail());
+            log.info("Successfully verified company email and set verificationStatus='EMAIL_VERIFIED' for company ID {} ({})", company.getId(), company.getEmail());
         } else {
             if (isUserEmailVerified(user)) {
                 return user;

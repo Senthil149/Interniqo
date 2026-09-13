@@ -3,10 +3,14 @@ package com.internship.platform.service;
 import com.internship.platform.client.AiServiceClient;
 import com.internship.platform.dto.ResumeExtractionResult;
 import com.internship.platform.dto.ResumeUploadResponse;
+import com.internship.platform.dto.StudentPreferenceRequest;
+import com.internship.platform.dto.StudentPreferenceResponse;
 import com.internship.platform.dto.StudentProfileResponse;
 import com.internship.platform.entity.Student;
+import com.internship.platform.entity.StudentPreference;
 import com.internship.platform.entity.User;
 import com.internship.platform.exception.ApiException;
+import com.internship.platform.repository.StudentPreferenceRepository;
 import com.internship.platform.repository.StudentRepository;
 import com.internship.platform.repository.UserRepository;
 import org.slf4j.Logger;
@@ -36,18 +40,30 @@ public class StudentService {
 
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
+    private final StudentPreferenceRepository studentPreferenceRepository;
     private final AiServiceClient aiServiceClient;
     private final String uploadDir;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public StudentService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            StudentPreferenceRepository studentPreferenceRepository,
+            AiServiceClient aiServiceClient,
+            @Value("${app.upload.dir}") String uploadDir) {
+        this.userRepository = userRepository;
+        this.studentRepository = studentRepository;
+        this.studentPreferenceRepository = studentPreferenceRepository;
+        this.aiServiceClient = aiServiceClient;
+        this.uploadDir = uploadDir;
+    }
 
     public StudentService(
             UserRepository userRepository,
             StudentRepository studentRepository,
             AiServiceClient aiServiceClient,
-            @Value("${app.upload.dir}") String uploadDir) {
-        this.userRepository = userRepository;
-        this.studentRepository = studentRepository;
-        this.aiServiceClient = aiServiceClient;
-        this.uploadDir = uploadDir;
+            String uploadDir) {
+        this(userRepository, studentRepository, null, aiServiceClient, uploadDir);
     }
 
     // ── Resume upload ─────────────────────────────────────────────────────────
@@ -105,6 +121,44 @@ public class StudentService {
     @Transactional(readOnly = true)
     public StudentProfileResponse getProfile(String email) {
         return StudentProfileResponse.from(resolveStudent(email));
+    }
+
+    // ── Preferences Management ────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public StudentPreferenceResponse getPreferences(String email) {
+        Student student = resolveStudent(email);
+        StudentPreference pref = studentPreferenceRepository.findByStudent(student)
+                .orElseGet(() -> {
+                    StudentPreference def = new StudentPreference();
+                    def.setStudent(student);
+                    return def;
+                });
+        return StudentPreferenceResponse.from(pref);
+    }
+
+    @Transactional
+    public StudentPreferenceResponse updatePreferences(String email, StudentPreferenceRequest request) {
+        Student student = resolveStudent(email);
+        StudentPreference pref = studentPreferenceRepository.findByStudent(student)
+                .orElseGet(() -> {
+                    StudentPreference p = new StudentPreference();
+                    p.setStudent(student);
+                    return p;
+                });
+
+        if (request.getCountry() != null) pref.setCountry(request.getCountry().trim());
+        if (request.getPreferredCountries() != null) pref.setPreferredCountries(request.getPreferredCountries().trim());
+        if (request.getLocation() != null) pref.setLocation(request.getLocation().trim());
+        if (request.getWorkMode() != null) pref.setWorkMode(request.getWorkMode().trim());
+        if (request.getDuration() != null) pref.setDuration(request.getDuration().trim());
+        if (request.getMinimumStipend() != null) pref.setMinimumStipend(request.getMinimumStipend());
+        if (request.getCurrency() != null) pref.setCurrency(request.getCurrency().trim());
+        if (request.getVisaRequired() != null) pref.setVisaRequired(request.getVisaRequired());
+        if (request.getRelocationPreference() != null) pref.setRelocationPreference(request.getRelocationPreference());
+
+        StudentPreference saved = studentPreferenceRepository.save(pref);
+        return StudentPreferenceResponse.from(saved);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

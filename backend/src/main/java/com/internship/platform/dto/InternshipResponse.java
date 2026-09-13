@@ -21,6 +21,8 @@ public class InternshipResponse {
     private String currency;
     private String eligibility;
     private String visaInformation;
+    private boolean visaRequired;
+    private boolean relocationRequired;
     private LocalDate deadline;
     private String status;
     private Integer riskScore;
@@ -30,6 +32,7 @@ public class InternshipResponse {
     private Boolean companyPersonalEmail;
     private Boolean companyWebsiteDomainMatch;
     private String companyWebsite;
+    private String companyVerificationStatus;
 
     public static InternshipResponse from(Internship internship) {
         return from(internship, null);
@@ -46,6 +49,7 @@ public class InternshipResponse {
             r.setCompanyPersonalEmail(internship.getCompany().isPersonalEmail());
             r.setCompanyWebsiteDomainMatch(internship.getCompany().isWebsiteDomainMatch());
             r.setCompanyWebsite(internship.getCompany().getWebsite());
+            r.setCompanyVerificationStatus(internship.getCompany().getVerificationStatus());
         }
         r.setTitle(internship.getTitle());
         r.setDescription(internship.getDescription());
@@ -58,6 +62,8 @@ public class InternshipResponse {
         r.setCurrency(internship.getCurrency());
         r.setEligibility(internship.getEligibility());
         r.setVisaInformation(internship.getVisaInformation());
+        r.setVisaRequired(internship.isVisaRequired());
+        r.setRelocationRequired(internship.isRelocationRequired());
         r.setDeadline(internship.getDeadline());
         r.setStatus(internship.getStatus());
 
@@ -142,4 +148,13 @@ public class InternshipResponse {
 
     public String getCompanyWebsite() { return companyWebsite; }
     public void setCompanyWebsite(String companyWebsite) { this.companyWebsite = companyWebsite; }
+
+    public boolean isVisaRequired() { return visaRequired; }
+    public void setVisaRequired(boolean visaRequired) { this.visaRequired = visaRequired; }
+
+    public boolean isRelocationRequired() { return relocationRequired; }
+    public void setRelocationRequired(boolean relocationRequired) { this.relocationRequired = relocationRequired; }
+
+    public String getCompanyVerificationStatus() { return companyVerificationStatus; }
+    public void setCompanyVerificationStatus(String companyVerificationStatus) { this.companyVerificationStatus = companyVerificationStatus; }
 }

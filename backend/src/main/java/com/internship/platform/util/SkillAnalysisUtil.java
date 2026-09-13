@@ -1,8 +1,11 @@
 package com.internship.platform.util;
 
+import com.internship.platform.dto.CrossBorderMatchBreakdown;
 import com.internship.platform.entity.Internship;
 import com.internship.platform.entity.Student;
+import com.internship.platform.entity.StudentPreference;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -246,7 +249,7 @@ public final class SkillAnalysisUtil {
     }
 
     /**
-     * Comprehensive result of explainability and skill-gap analysis.
+     * Comprehensive result of explainability, skill-gap analysis, and cross-border matching.
      */
     public static class AnalysisResult {
         private final List<String> matchingStrengths;
@@ -255,6 +258,7 @@ public final class SkillAnalysisUtil {
         private final List<String> preferenceMatches;
         private final String skillGapMessage;
         private final String fitLevel;
+        private final CrossBorderMatchBreakdown crossBorderBreakdown;
 
         public AnalysisResult(
                 List<String> matchingStrengths,
@@ -262,13 +266,15 @@ public final class SkillAnalysisUtil {
                 List<String> missingSkills,
                 List<String> preferenceMatches,
                 String skillGapMessage,
-                String fitLevel) {
+                String fitLevel,
+                CrossBorderMatchBreakdown crossBorderBreakdown) {
             this.matchingStrengths = matchingStrengths;
             this.matchedSkills = matchedSkills;
             this.missingSkills = missingSkills;
             this.preferenceMatches = preferenceMatches;
             this.skillGapMessage = skillGapMessage;
             this.fitLevel = fitLevel;
+            this.crossBorderBreakdown = crossBorderBreakdown;
         }
 
         public List<String> getMatchingStrengths() {
@@ -294,13 +300,24 @@ public final class SkillAnalysisUtil {
         public String getFitLevel() {
             return fitLevel;
         }
+
+        public CrossBorderMatchBreakdown getCrossBorderBreakdown() {
+            return crossBorderBreakdown;
+        }
     }
 
     /**
-     * Analyze student profile against an internship opportunity and generate
-     * explainability factors, skill-gap analysis, and compatibility signals.
+     * Backward-compatible overload without student preference.
      */
     public static AnalysisResult analyze(Student student, Internship internship, Double similarityScore) {
+        return analyze(student, null, internship, similarityScore);
+    }
+
+    /**
+     * Analyze student profile and preferences against an internship opportunity and generate
+     * explainability factors, skill-gap analysis, and structured cross-border compatibility breakdown.
+     */
+    public static AnalysisResult analyze(Student student, StudentPreference preference, Internship internship, Double similarityScore) {
         String fitLevel = getFitLevel(similarityScore);
 
         if (student == null || internship == null) {
@@ -310,7 +327,8 @@ public final class SkillAnalysisUtil {
                     Collections.emptyList(),
                     Collections.emptyList(),
                     "No profile or internship data available for analysis.",
-                    fitLevel
+                    fitLevel,
+                    new CrossBorderMatchBreakdown()
             );
         }
 
@@ -376,7 +394,6 @@ public final class SkillAnalysisUtil {
         // Project alignment
         if (student.getProjects() != null && !student.getProjects().isBlank()) {
             String projText = student.getProjects();
-            // Check if any matched skill or internship keywords appear in projects
             boolean hasRelevantProject = false;
             for (String skill : matchedSkills) {
                 Pattern pat = SKILL_PATTERNS.get(skill);
@@ -406,38 +423,131 @@ public final class SkillAnalysisUtil {
             }
         }
 
-        // 5. Constraint and preference compatibility
+        // 5. Cross-Border Matching & Preference Compatibility
         List<String> preferenceMatches = new ArrayList<>();
+        CrossBorderMatchBreakdown crossBorder = new CrossBorderMatchBreakdown();
 
-        if (internship.getWorkMode() != null && !internship.getWorkMode().isBlank()) {
-            if ("REMOTE".equalsIgnoreCase(internship.getWorkMode())) {
-                preferenceMatches.add("Remote work mode matches preference");
-            } else if ("HYBRID".equalsIgnoreCase(internship.getWorkMode())) {
-                preferenceMatches.add("Hybrid work mode matches preference");
+        // 5a. Country Match
+        String inCountry = internship.getCountry() != null ? internship.getCountry().trim() : null;
+        if (inCountry == null || inCountry.isBlank()) {
+            crossBorder.setCountryMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT SPECIFIED", "Country not specified"));
+        } else {
+            Set<String> prefCountries = new LinkedHashSet<>();
+            if (preference != null) {
+                if (preference.getCountry() != null && !preference.getCountry().isBlank()) {
+                    prefCountries.add(preference.getCountry().trim().toLowerCase(Locale.ROOT));
+                }
+                if (preference.getPreferredCountries() != null && !preference.getPreferredCountries().isBlank()) {
+                    for (String pc : preference.getPreferredCountries().split("[,;\\n]")) {
+                        String trimmed = pc.trim().toLowerCase(Locale.ROOT);
+                        if (!trimmed.isEmpty()) prefCountries.add(trimmed);
+                    }
+                }
+            }
+
+            String inCountryLower = inCountry.toLowerCase(Locale.ROOT);
+            if (prefCountries.isEmpty()) {
+                crossBorder.setCountryMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Available in " + inCountry));
+                preferenceMatches.add("Location: " + inCountry + (internship.getCity() != null ? " (" + internship.getCity() + ")" : ""));
+            } else if (prefCountries.contains(inCountryLower)) {
+                crossBorder.setCountryMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Country preference matched: " + inCountry));
+                preferenceMatches.add("Country preference matched: " + inCountry);
+            } else if ("REMOTE".equalsIgnoreCase(internship.getWorkMode())) {
+                crossBorder.setCountryMatch(new CrossBorderMatchBreakdown.MatchIndicator("PARTIALLY MATCHED", "Remote role based in " + inCountry));
+                preferenceMatches.add("Remote role based in " + inCountry);
             } else {
-                preferenceMatches.add(internship.getCountry() + " on-site work matches preference");
+                crossBorder.setCountryMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT MATCHED", "Role located in " + inCountry + ", does not match preferred countries"));
             }
         }
 
-        if (internship.getCountry() != null && !internship.getCountry().isBlank()) {
-            String loc = internship.getCountry();
-            if (internship.getCity() != null && !internship.getCity().isBlank()) {
-                loc += " (" + internship.getCity() + ")";
+        // 5b. Work Mode Match
+        String inMode = internship.getWorkMode() != null ? internship.getWorkMode().trim() : null;
+        String prefMode = (preference != null && preference.getWorkMode() != null) ? preference.getWorkMode().trim() : null;
+        if (inMode == null || inMode.isBlank()) {
+            crossBorder.setWorkModeMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT SPECIFIED", "Work mode not specified"));
+        } else if (prefMode == null || prefMode.isBlank()) {
+            crossBorder.setWorkModeMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", formatMode(inMode) + " work mode"));
+            preferenceMatches.add(formatMode(inMode) + " work mode");
+        } else if (prefMode.equalsIgnoreCase(inMode)) {
+            crossBorder.setWorkModeMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Work mode matched: " + formatMode(inMode)));
+            preferenceMatches.add("Work mode matched: " + formatMode(inMode) + " work mode");
+        } else if ("REMOTE".equalsIgnoreCase(inMode)) {
+            crossBorder.setWorkModeMatch(new CrossBorderMatchBreakdown.MatchIndicator("PARTIALLY MATCHED", "Remote work mode matches flexible location preference"));
+            preferenceMatches.add("Remote work mode available");
+        } else {
+            crossBorder.setWorkModeMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT MATCHED", "Role is " + formatMode(inMode) + ", differs from preferred " + formatMode(prefMode)));
+        }
+
+        // 5c. Duration Match
+        String inDuration = internship.getDuration() != null ? internship.getDuration().trim() : null;
+        String prefDuration = (preference != null && preference.getDuration() != null) ? preference.getDuration().trim() : null;
+        if (inDuration == null || inDuration.isBlank()) {
+            crossBorder.setDurationMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT SPECIFIED", "Duration not specified"));
+        } else if (prefDuration == null || prefDuration.isBlank()) {
+            crossBorder.setDurationMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Duration: " + inDuration));
+            preferenceMatches.add("Duration: " + inDuration);
+        } else if (prefDuration.equalsIgnoreCase(inDuration) || inDuration.toLowerCase(Locale.ROOT).contains(prefDuration.toLowerCase(Locale.ROOT))) {
+            crossBorder.setDurationMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Duration preference matched: " + inDuration));
+            preferenceMatches.add("Duration preference matched: " + inDuration);
+        } else {
+            crossBorder.setDurationMatch(new CrossBorderMatchBreakdown.MatchIndicator("PARTIALLY MATCHED", "Duration: " + inDuration + " (preferred: " + prefDuration + ")"));
+        }
+
+        // 5d. Stipend Match
+        BigDecimal inStipend = internship.getStipend();
+        BigDecimal prefMinStipend = preference != null ? preference.getMinimumStipend() : null;
+        String curr = internship.getCurrency() != null ? internship.getCurrency() : "";
+        if (inStipend == null) {
+            crossBorder.setStipendMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT SPECIFIED", "Stipend details not specified"));
+        } else if (prefMinStipend == null || prefMinStipend.compareTo(BigDecimal.ZERO) == 0) {
+            crossBorder.setStipendMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Stipend offered: " + inStipend + " " + curr + "/mo"));
+            preferenceMatches.add("Stipend: " + inStipend + " " + curr + "/mo");
+        } else if (inStipend.compareTo(prefMinStipend) >= 0) {
+            crossBorder.setStipendMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Stipend preference matched: " + inStipend + " " + curr + " (min " + prefMinStipend + ")"));
+            preferenceMatches.add("Stipend preference matched: " + inStipend + " " + curr + "/mo");
+        } else {
+            crossBorder.setStipendMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT MATCHED", "Offered stipend (" + inStipend + " " + curr + ") is below preferred minimum (" + prefMinStipend + " " + curr + ")"));
+        }
+
+        // 5e. Visa Match
+        boolean inVisaReq = internship.isVisaRequired();
+        String inVisaInfo = internship.getVisaInformation();
+        boolean prefVisaReq = preference != null && preference.isVisaRequired();
+        if (prefVisaReq) {
+            if ((inVisaInfo != null && !inVisaInfo.isBlank()) || inVisaReq) {
+                crossBorder.setVisaMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Visa guidance or support available"));
+                preferenceMatches.add("Visa guidance matches preference");
+            } else {
+                crossBorder.setVisaMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT MATCHED", "Visa requirement does not match your preference"));
+                preferenceMatches.add("Visa requirement does not match your preference");
             }
-            preferenceMatches.add(loc + " matches preference");
+        } else {
+            crossBorder.setVisaMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "No visa sponsorship required"));
         }
 
-        if (internship.getDuration() != null && !internship.getDuration().isBlank()) {
-            preferenceMatches.add("Duration matches preference");
+        // 5f. Relocation Match
+        boolean inRelocReq = internship.isRelocationRequired();
+        boolean prefReloc = preference != null && preference.isRelocationPreference();
+        if (inRelocReq) {
+            if (prefReloc) {
+                crossBorder.setRelocationMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "Relocation requirement matched with candidate preference"));
+                preferenceMatches.add("Relocation matched with candidate preference");
+            } else {
+                crossBorder.setRelocationMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT MATCHED", "Relocation required for this role"));
+            }
+        } else {
+            crossBorder.setRelocationMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "No relocation required"));
         }
 
-        if (internship.getStipend() != null && internship.getStipend().doubleValue() > 0) {
-            String curr = internship.getCurrency() != null ? internship.getCurrency() : "";
-            preferenceMatches.add("Stipend matches preference (" + internship.getStipend() + " " + curr + "/mo)");
-        }
-
-        if (internship.getVisaInformation() != null && !internship.getVisaInformation().isBlank()) {
-            preferenceMatches.add("Visa guidance matches preference");
+        // 5g. Skill Match Breakdown
+        if (requiredSkills.isEmpty()) {
+            crossBorder.setSkillMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", "General profile match"));
+        } else if (missingSkills.isEmpty()) {
+            crossBorder.setSkillMatch(new CrossBorderMatchBreakdown.MatchIndicator("MATCHED", matchedSkills.size() + " of " + requiredSkills.size() + " required skills matched"));
+        } else if (!matchedSkills.isEmpty()) {
+            crossBorder.setSkillMatch(new CrossBorderMatchBreakdown.MatchIndicator("PARTIALLY MATCHED", matchedSkills.size() + " of " + requiredSkills.size() + " required skills matched"));
+        } else {
+            crossBorder.setSkillMatch(new CrossBorderMatchBreakdown.MatchIndicator("NOT MATCHED", "0 of " + requiredSkills.size() + " required skills matched"));
         }
 
         // 6. Formulate personalized skill-gap message
@@ -462,7 +572,16 @@ public final class SkillAnalysisUtil {
                 missingSkills,
                 preferenceMatches,
                 skillGapMessage,
-                fitLevel
+                fitLevel,
+                crossBorder
         );
+    }
+
+    private static String formatMode(String mode) {
+        if (mode == null) return "";
+        if ("REMOTE".equalsIgnoreCase(mode)) return "Remote";
+        if ("HYBRID".equalsIgnoreCase(mode)) return "Hybrid";
+        if ("ONSITE".equalsIgnoreCase(mode)) return "On-site";
+        return mode;
     }
 }
