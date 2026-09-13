@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Email verification records are owned by either a user or a company, never both or neither.
@@ -51,6 +50,7 @@ public class EmailVerificationService {
     private static final String RESET_TOKEN_PREFIX = "reset_";
     private static final int EXPIRY_MINUTES = 10;
     private static final int RATE_LIMIT_SECONDS = 60;
+    public static final int MAX_VERIFICATION_ATTEMPTS = 5;
 
     private final EmailVerificationRepository emailVerificationRepository;
     private final CompanyRepository companyRepository;
@@ -90,7 +90,7 @@ public class EmailVerificationService {
 
     /**
      * Generate a 6-digit numeric verification code, persist an EmailVerification record with 10-minute expiry,
-     * and deliver via email (or console log) for a Company.
+     * and deliver via Gmail SMTP for a Company.
      * Enforces a 60-second rate-limit cooldown.
      */
     @Transactional
@@ -133,6 +133,7 @@ public class EmailVerificationService {
         verification.setCompany(company);
         verification.setToken(code);
         verification.setExpiry(expiry);
+        verification.setAttempts(0);
 
         assertExactlyOneOwner(verification);
 
@@ -146,7 +147,7 @@ public class EmailVerificationService {
 
     /**
      * Generate a 6-digit numeric verification code, persist an EmailVerification record with 10-minute expiry,
-     * and deliver via email (or console log) for a Student User.
+     * and deliver via Gmail SMTP for a Student User.
      * Enforces a 60-second rate-limit cooldown.
      */
     @Transactional
@@ -189,6 +190,7 @@ public class EmailVerificationService {
         verification.setUser(user);
         verification.setToken(code);
         verification.setExpiry(expiry);
+        verification.setAttempts(0);
 
         assertExactlyOneOwner(verification);
 
@@ -202,7 +204,7 @@ public class EmailVerificationService {
 
     /**
      * Generate a 6-digit password reset code with 10-minute expiry, persist in email_verifications table,
-     * and deliver via email (or console log).
+     * and deliver via Gmail SMTP.
      */
     @Transactional
     public EmailVerification createAndSendPasswordReset(User user) {
@@ -231,6 +233,7 @@ public class EmailVerificationService {
         verification.setUser(user);
         verification.setToken(token);
         verification.setExpiry(expiry);
+        verification.setAttempts(0);
 
         assertExactlyOneOwner(verification);
 
@@ -325,6 +328,7 @@ public class EmailVerificationService {
 
     /**
      * Verify a 6-digit numeric verification code for an account (Student or Company).
+     * Protected by maximum 5 attempts.
      * On success, marks the email as verified and returns the activated User entity.
      */
     @Transactional
@@ -350,11 +354,34 @@ public class EmailVerificationService {
                 return user;
             }
 
-            EmailVerification verification = emailVerificationRepository.findTopByCompanyAndTokenAndVerifiedAtIsNull(company, code)
-                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid verification code"));
+            // Find matching unverified code, or fallback to active code to record attempt
+            Optional<EmailVerification> matchOpt = emailVerificationRepository.findTopByCompanyAndTokenAndVerifiedAtIsNull(company, code);
+            EmailVerification verification;
+            if (matchOpt.isPresent()) {
+                verification = matchOpt.get();
+            } else {
+                verification = emailVerificationRepository.findTopByCompanyAndVerifiedAtIsNullOrderByExpiryDesc(company)
+                        .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid verification code"));
+            }
 
             if (verification.getExpiry().isBefore(Instant.now())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Verification code has expired. Please request a new code.");
+            }
+
+            if (verification.getAttempts() >= MAX_VERIFICATION_ATTEMPTS) {
+                emailVerificationRepository.delete(verification);
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Too many failed attempts. This verification code has been invalidated. Please request a new code.");
+            }
+
+            if (!verification.getToken().equals(code)) {
+                verification.setAttempts(verification.getAttempts() + 1);
+                emailVerificationRepository.save(verification);
+                int remaining = MAX_VERIFICATION_ATTEMPTS - verification.getAttempts();
+                if (remaining <= 0) {
+                    emailVerificationRepository.delete(verification);
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Too many failed attempts. This verification code has been invalidated. Please request a new code.");
+                }
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid verification code. " + remaining + " attempts remaining.");
             }
 
             verification.setVerifiedAt(Instant.now());
@@ -368,11 +395,33 @@ public class EmailVerificationService {
                 return user;
             }
 
-            EmailVerification verification = emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(user, code)
-                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid verification code"));
+            Optional<EmailVerification> matchOpt = emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(user, code);
+            EmailVerification verification;
+            if (matchOpt.isPresent()) {
+                verification = matchOpt.get();
+            } else {
+                verification = emailVerificationRepository.findTopByUserAndVerifiedAtIsNullOrderByExpiryDesc(user)
+                        .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid verification code"));
+            }
 
             if (verification.getExpiry().isBefore(Instant.now())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Verification code has expired. Please request a new code.");
+            }
+
+            if (verification.getAttempts() >= MAX_VERIFICATION_ATTEMPTS) {
+                emailVerificationRepository.delete(verification);
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Too many failed attempts. This verification code has been invalidated. Please request a new code.");
+            }
+
+            if (!verification.getToken().equals(code)) {
+                verification.setAttempts(verification.getAttempts() + 1);
+                emailVerificationRepository.save(verification);
+                int remaining = MAX_VERIFICATION_ATTEMPTS - verification.getAttempts();
+                if (remaining <= 0) {
+                    emailVerificationRepository.delete(verification);
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Too many failed attempts. This verification code has been invalidated. Please request a new code.");
+                }
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid verification code. " + remaining + " attempts remaining.");
             }
 
             verification.setVerifiedAt(Instant.now());
@@ -455,7 +504,7 @@ public class EmailVerificationService {
                 createAndSendVerification(user);
                 return new ResendVerificationResponse(
                         true,
-                        "A fresh verification code has been sent to " + normalizedEmail + ". Please check your inbox or server logs.");
+                        "A fresh verification code has been sent to " + normalizedEmail + ". Please check your inbox.");
             } else if (user.getRole() == UserRole.COMPANY) {
                 Company company = companyRepository.findByUser(user)
                         .or(() -> companyRepository.findByEmail(normalizedEmail))
@@ -469,7 +518,7 @@ public class EmailVerificationService {
                     createAndSendVerification(company);
                     return new ResendVerificationResponse(
                             true,
-                            "A fresh verification code has been sent to " + normalizedEmail + ". Please check your inbox or server logs.");
+                            "A fresh verification code has been sent to " + normalizedEmail + ". Please check your inbox.");
                 }
             }
         }
@@ -486,14 +535,14 @@ public class EmailVerificationService {
             createAndSendVerification(company);
             return new ResendVerificationResponse(
                     true,
-                    "A fresh verification code has been sent to " + normalizedEmail + ". Please check your inbox or server logs.");
+                    "A fresh verification code has been sent to " + normalizedEmail + ". Please check your inbox.");
         }
 
         throw new ApiException(HttpStatus.NOT_FOUND, "No account found for email: " + normalizedEmail);
     }
 
     /**
-     * Request a password reset link.
+     * Request a password reset code.
      * Always returns generic success response to prevent email enumeration.
      */
     @Transactional
@@ -507,16 +556,17 @@ public class EmailVerificationService {
         if (userOpt.isPresent()) {
             createAndSendPasswordReset(userOpt.get());
         } else {
-            log.info("Password reset requested for non-existent email: {}", email);
+            log.info("Password reset requested for non-existent email");
         }
 
         return new ForgotPasswordResponse(
                 true,
-                "If an account with that email exists, we have sent a 6-digit password reset code. Please check your inbox or server logs.");
+                "If an account with that email exists, we have sent a 6-digit password reset code. Please check your inbox.");
     }
 
     /**
      * Consume a 6-digit password reset code (or reset token) and update user password.
+     * Protected by maximum 5 attempts.
      */
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
@@ -534,16 +584,29 @@ public class EmailVerificationService {
         String trimmed = codeOrToken.trim();
         String token = trimmed.startsWith(RESET_TOKEN_PREFIX) ? trimmed : RESET_TOKEN_PREFIX + trimmed;
 
-        EmailVerification verification;
+        User user = null;
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             String email = request.getEmail().trim().toLowerCase();
-            User user = userRepository.findByEmail(email)
+            user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid reset code or email"));
-            verification = emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(user, token)
-                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid or expired password reset code"));
+        }
+
+        EmailVerification verification;
+        if (user != null) {
+            Optional<EmailVerification> matchOpt = emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(user, token);
+            if (matchOpt.isPresent()) {
+                verification = matchOpt.get();
+            } else {
+                List<EmailVerification> userVerifications = emailVerificationRepository.findByUserOrderByExpiryDesc(user);
+                verification = userVerifications.stream()
+                        .filter(ev -> ev.getVerifiedAt() == null && ev.getToken() != null && ev.getToken().startsWith(RESET_TOKEN_PREFIX))
+                        .findFirst()
+                        .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid or expired password reset code"));
+            }
         } else {
             verification = emailVerificationRepository.findByToken(token)
                     .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid or unrecognized password reset code"));
+            user = verification.getUser();
         }
 
         if (verification.getVerifiedAt() != null) {
@@ -554,7 +617,22 @@ public class EmailVerificationService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "This password reset code has expired. Please request a new one.");
         }
 
-        User user = verification.getUser();
+        if (verification.getAttempts() >= MAX_VERIFICATION_ATTEMPTS) {
+            emailVerificationRepository.delete(verification);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Too many failed attempts. This password reset code has been invalidated. Please request a new one.");
+        }
+
+        if (!verification.getToken().equals(token)) {
+            verification.setAttempts(verification.getAttempts() + 1);
+            emailVerificationRepository.save(verification);
+            int remaining = MAX_VERIFICATION_ATTEMPTS - verification.getAttempts();
+            if (remaining <= 0) {
+                emailVerificationRepository.delete(verification);
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Too many failed attempts. This password reset code has been invalidated. Please request a new one.");
+            }
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid password reset code. " + remaining + " attempts remaining.");
+        }
+
         if (user == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "No user associated with this reset code");
         }
@@ -565,7 +643,7 @@ public class EmailVerificationService {
         verification.setVerifiedAt(Instant.now());
         emailVerificationRepository.save(verification);
 
-        log.info("Successfully reset password for user ID {} ({})", user.getId(), user.getEmail());
+        log.info("Successfully reset password for user ID {}", user.getId());
 
         return new ResetPasswordResponse(
                 true,

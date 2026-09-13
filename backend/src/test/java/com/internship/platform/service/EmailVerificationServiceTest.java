@@ -487,4 +487,57 @@ class EmailVerificationServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         assertTrue(ex.getMessage().contains("Invalid or unrecognized password reset code"));
     }
+
+    @Test
+    @DisplayName("verifyCode: Wrong code increments attempts and reports remaining attempts")
+    void verifyCode_wrongCode_incrementsAttempts() {
+        EmailVerification verification = new EmailVerification();
+        verification.setToken("111111");
+        verification.setUser(studentUser);
+        verification.setExpiry(Instant.now().plus(8, ChronoUnit.MINUTES));
+        verification.setAttempts(0);
+
+        when(userRepository.findByEmail("bob@student.edu")).thenReturn(Optional.of(studentUser));
+        when(emailVerificationRepository.isUserEmailVerified(studentUser)).thenReturn(false);
+        when(emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(studentUser, "999999"))
+                .thenReturn(Optional.empty());
+        when(emailVerificationRepository.findTopByUserAndVerifiedAtIsNullOrderByExpiryDesc(studentUser))
+                .thenReturn(Optional.of(verification));
+        when(emailVerificationRepository.save(any(EmailVerification.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                emailVerificationService.verifyCode(
+                        new com.internship.platform.dto.VerifyCodeRequest("bob@student.edu", "999999")));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertEquals(1, verification.getAttempts());
+        assertTrue(ex.getMessage().contains("4 attempts remaining"));
+        verify(emailVerificationRepository).save(verification);
+        verify(emailVerificationRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("verifyCode: 5 failed attempts invalidates code and deletes it")
+    void verifyCode_maxAttempts_invalidatesCode() {
+        EmailVerification verification = new EmailVerification();
+        verification.setToken("111111");
+        verification.setUser(studentUser);
+        verification.setExpiry(Instant.now().plus(8, ChronoUnit.MINUTES));
+        verification.setAttempts(4); // 4th attempt already made, next is 5th
+
+        when(userRepository.findByEmail("bob@student.edu")).thenReturn(Optional.of(studentUser));
+        when(emailVerificationRepository.isUserEmailVerified(studentUser)).thenReturn(false);
+        when(emailVerificationRepository.findTopByUserAndTokenAndVerifiedAtIsNull(studentUser, "999999"))
+                .thenReturn(Optional.empty());
+        when(emailVerificationRepository.findTopByUserAndVerifiedAtIsNullOrderByExpiryDesc(studentUser))
+                .thenReturn(Optional.of(verification));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                emailVerificationService.verifyCode(
+                        new com.internship.platform.dto.VerifyCodeRequest("bob@student.edu", "999999")));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertTrue(ex.getMessage().contains("Too many failed attempts"));
+        verify(emailVerificationRepository).delete(verification);
+    }
 }

@@ -37,6 +37,9 @@ public class EmailVerification {
     @Column(name = "verified_at")
     private Instant verifiedAt;
 
+    @Column(nullable = false)
+    private int attempts = 0;
+
     public Long getId() {
         return id;
     }
@@ -83,5 +86,13 @@ public class EmailVerification {
 
     public void setVerifiedAt(Instant verifiedAt) {
         this.verifiedAt = verifiedAt;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public void setAttempts(int attempts) {
+        this.attempts = attempts;
     }
 }
