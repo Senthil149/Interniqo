@@ -30,27 +30,36 @@ const EMPTY_FILTERS = {
 }
 
 function MatchStatusBadge({ status }) {
-  if (!status || status === 'NOT SPECIFIED') {
+  const rawStatus = typeof status === 'object' && status !== null ? status.status : status
+  const statusStr = typeof rawStatus === 'string' ? rawStatus.trim().toUpperCase() : ''
+
+  if (!statusStr || statusStr === 'NOT SPECIFIED') {
     return <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Not Specified</span>
   }
-  if (status === 'MATCHED') {
+  if (statusStr === 'MATCHED') {
     return <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200">✓ MATCHED</span>
   }
-  if (status === 'PARTIALLY MATCHED') {
+  if (statusStr === 'PARTIALLY MATCHED' || statusStr === 'PARTIAL') {
     return <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">⚠ PARTIAL</span>
   }
   return <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">✕ NOT MATCHED</span>
 }
 
-function CrossBorderItem({ icon, label, status, detail }) {
+function CrossBorderItem({ icon, label, indicator, status, detail }) {
+  const itemObj = indicator || (typeof status === 'object' && status !== null ? status : null)
+  const statusVal = itemObj ? itemObj.status : status
+  const detailVal = itemObj ? itemObj.message : detail
+
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0 text-xs">
-      <div className="flex items-center gap-1.5">
-        <span>{icon}</span>
-        <span className="font-semibold text-slate-700">{label}:</span>
-        {detail && <span className="text-slate-500 font-normal">{detail}</span>}
+    <div className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0 text-xs gap-2">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="flex-shrink-0">{icon}</span>
+        <span className="font-semibold text-slate-700 flex-shrink-0">{label}:</span>
+        {detailVal && <span className="text-slate-500 font-normal truncate">{detailVal}</span>}
       </div>
-      <MatchStatusBadge status={status} />
+      <div className="flex-shrink-0">
+        <MatchStatusBadge status={statusVal} />
+      </div>
     </div>
   )
 }
@@ -314,44 +323,37 @@ function RecommendationCard({ rec }) {
                       <CrossBorderItem
                         icon="🌍"
                         label="Country"
-                        status={rec.crossBorderBreakdown.countryMatch}
-                        detail={rec.crossBorderBreakdown.countryDetail}
+                        indicator={rec.crossBorderBreakdown.countryMatch}
                       />
                       <CrossBorderItem
                         icon="💼"
                         label="Work Mode"
-                        status={rec.crossBorderBreakdown.workModeMatch}
-                        detail={rec.crossBorderBreakdown.workModeDetail}
+                        indicator={rec.crossBorderBreakdown.workModeMatch}
                       />
                       <CrossBorderItem
                         icon="⏱"
                         label="Duration"
-                        status={rec.crossBorderBreakdown.durationMatch}
-                        detail={rec.crossBorderBreakdown.durationDetail}
+                        indicator={rec.crossBorderBreakdown.durationMatch}
                       />
                       <CrossBorderItem
                         icon="💰"
                         label="Stipend"
-                        status={rec.crossBorderBreakdown.stipendMatch}
-                        detail={rec.crossBorderBreakdown.stipendDetail}
+                        indicator={rec.crossBorderBreakdown.stipendMatch}
                       />
                       <CrossBorderItem
                         icon="🛂"
                         label="Visa Support"
-                        status={rec.crossBorderBreakdown.visaMatch}
-                        detail={rec.crossBorderBreakdown.visaDetail}
+                        indicator={rec.crossBorderBreakdown.visaMatch}
                       />
                       <CrossBorderItem
                         icon="🛫"
                         label="Relocation"
-                        status={rec.crossBorderBreakdown.relocationMatch}
-                        detail={rec.crossBorderBreakdown.relocationDetail}
+                        indicator={rec.crossBorderBreakdown.relocationMatch}
                       />
                       <CrossBorderItem
                         icon="🎯"
                         label="Skills Fit"
-                        status={rec.crossBorderBreakdown.skillMatch}
-                        detail={rec.crossBorderBreakdown.skillDetail}
+                        indicator={rec.crossBorderBreakdown.skillMatch}
                       />
                     </div>
                   </div>
