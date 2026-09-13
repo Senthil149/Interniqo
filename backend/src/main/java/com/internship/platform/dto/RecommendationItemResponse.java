@@ -32,6 +32,14 @@ public class RecommendationItemResponse {
     private Boolean companyWebsiteDomainMatch;
     private String companyWebsite;
 
+    // Explainable AI & Skill-gap fields
+    private java.util.List<String> matchingStrengths;
+    private java.util.List<String> matchedSkills;
+    private java.util.List<String> missingSkills;
+    private java.util.List<String> preferenceMatches;
+    private String skillGapMessage;
+    private String fitLevel;
+
     public static RecommendationItemResponse from(Recommendation rec) {
         return from(rec, null);
     }
@@ -75,6 +83,20 @@ public class RecommendationItemResponse {
                         .toList());
             }
         }
+
+        if (rec.getStudent() != null && rec.getInternship() != null) {
+            com.internship.platform.util.SkillAnalysisUtil.AnalysisResult analysis =
+                    com.internship.platform.util.SkillAnalysisUtil.analyze(rec.getStudent(), rec.getInternship(), rec.getSimilarityScore());
+            resp.setMatchingStrengths(analysis.getMatchingStrengths());
+            resp.setMatchedSkills(analysis.getMatchedSkills());
+            resp.setMissingSkills(analysis.getMissingSkills());
+            resp.setPreferenceMatches(analysis.getPreferenceMatches());
+            resp.setSkillGapMessage(analysis.getSkillGapMessage());
+            resp.setFitLevel(analysis.getFitLevel());
+        } else {
+            resp.setFitLevel(com.internship.platform.util.SkillAnalysisUtil.getFitLevel(rec.getSimilarityScore()));
+        }
+
         return resp;
     }
 
@@ -260,5 +282,53 @@ public class RecommendationItemResponse {
 
     public void setCompanyWebsite(String companyWebsite) {
         this.companyWebsite = companyWebsite;
+    }
+
+    public java.util.List<String> getMatchingStrengths() {
+        return matchingStrengths;
+    }
+
+    public void setMatchingStrengths(java.util.List<String> matchingStrengths) {
+        this.matchingStrengths = matchingStrengths;
+    }
+
+    public java.util.List<String> getMatchedSkills() {
+        return matchedSkills;
+    }
+
+    public void setMatchedSkills(java.util.List<String> matchedSkills) {
+        this.matchedSkills = matchedSkills;
+    }
+
+    public java.util.List<String> getMissingSkills() {
+        return missingSkills;
+    }
+
+    public void setMissingSkills(java.util.List<String> missingSkills) {
+        this.missingSkills = missingSkills;
+    }
+
+    public java.util.List<String> getPreferenceMatches() {
+        return preferenceMatches;
+    }
+
+    public void setPreferenceMatches(java.util.List<String> preferenceMatches) {
+        this.preferenceMatches = preferenceMatches;
+    }
+
+    public String getSkillGapMessage() {
+        return skillGapMessage;
+    }
+
+    public void setSkillGapMessage(String skillGapMessage) {
+        this.skillGapMessage = skillGapMessage;
+    }
+
+    public String getFitLevel() {
+        return fitLevel;
+    }
+
+    public void setFitLevel(String fitLevel) {
+        this.fitLevel = fitLevel;
     }
 }

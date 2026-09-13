@@ -7,21 +7,26 @@ import com.internship.platform.dto.MatchResponse;
 import com.internship.platform.dto.MatchResultItem;
 import com.internship.platform.dto.RecommendationItemResponse;
 import com.internship.platform.dto.RecommendationListResponse;
+import com.internship.platform.dto.StudentRecommendationDashboardResponse;
+import com.internship.platform.entity.ApplicationStatus;
 import com.internship.platform.entity.Internship;
 import com.internship.platform.entity.Recommendation;
 import com.internship.platform.entity.Student;
 import com.internship.platform.entity.User;
 import com.internship.platform.exception.ApiException;
+import com.internship.platform.repository.ApplicationRepository;
 import com.internship.platform.repository.InternshipRepository;
 import com.internship.platform.repository.RecommendationRepository;
 import com.internship.platform.repository.RiskAssessmentRepository;
 import com.internship.platform.repository.StudentRepository;
 import com.internship.platform.repository.UserRepository;
 import com.internship.platform.util.InternshipSpecification;
+import com.internship.platform.util.SkillAnalysisUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,7 +61,26 @@ public class RecommendationService {
     private final InternshipRepository internshipRepository;
     private final RecommendationRepository recommendationRepository;
     private final RiskAssessmentRepository riskAssessmentRepository;
+    private final ApplicationRepository applicationRepository;
     private final AiServiceClient aiServiceClient;
+
+    @Autowired
+    public RecommendationService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            InternshipRepository internshipRepository,
+            RecommendationRepository recommendationRepository,
+            RiskAssessmentRepository riskAssessmentRepository,
+            ApplicationRepository applicationRepository,
+            AiServiceClient aiServiceClient) {
+        this.userRepository = userRepository;
+        this.studentRepository = studentRepository;
+        this.internshipRepository = internshipRepository;
+        this.recommendationRepository = recommendationRepository;
+        this.riskAssessmentRepository = riskAssessmentRepository;
+        this.applicationRepository = applicationRepository;
+        this.aiServiceClient = aiServiceClient;
+    }
 
     public RecommendationService(
             UserRepository userRepository,
@@ -65,12 +89,7 @@ public class RecommendationService {
             RecommendationRepository recommendationRepository,
             RiskAssessmentRepository riskAssessmentRepository,
             AiServiceClient aiServiceClient) {
-        this.userRepository = userRepository;
-        this.studentRepository = studentRepository;
-        this.internshipRepository = internshipRepository;
-        this.recommendationRepository = recommendationRepository;
-        this.riskAssessmentRepository = riskAssessmentRepository;
-        this.aiServiceClient = aiServiceClient;
+        this(userRepository, studentRepository, internshipRepository, recommendationRepository, riskAssessmentRepository, null, aiServiceClient);
     }
 
     /**
@@ -86,22 +105,94 @@ public class RecommendationService {
         }
 
         List<Recommendation> stored = recommendationRepository.findByStudentOrderByRankingAsc(student);
-        if (stored.isEmpty()) {
+        List<Recommendation> deduped = deduplicateRecommendations(stored);
+        if (deduped.isEmpty()) {
             return RecommendationListResponse.empty(
                     "No recommendations generated yet. Click 'Generate Recommendations' to begin.");
         }
 
-        Instant generatedAt = stored.get(0).getCreatedAt();
-        List<RecommendationItemResponse> items = stored.stream()
-                .map(rec -> {
-                    com.internship.platform.entity.RiskAssessment risk = rec.getInternship() != null
-                            ? riskAssessmentRepository.findTopByInternshipOrderByCreatedAtDesc(rec.getInternship()).orElse(null)
-                            : null;
-                    return RecommendationItemResponse.from(rec, risk);
-                })
-                .toList();
+        Instant generatedAt = deduped.get(0).getCreatedAt();
+        List<RecommendationItemResponse> items = new ArrayList<>();
+        for (int i = 0; i < deduped.size(); i++) {
+            Recommendation rec = deduped.get(i);
+            com.internship.platform.entity.RiskAssessment risk = rec.getInternship() != null
+                    ? riskAssessmentRepository.findTopByInternshipOrderByCreatedAtDesc(rec.getInternship()).orElse(null)
+                    : null;
+            RecommendationItemResponse item = RecommendationItemResponse.from(rec, risk);
+            item.setRanking(i + 1);
+            items.add(item);
+        }
 
         return RecommendationListResponse.success(items, generatedAt);
+    }
+
+    /**
+     * Get live recommendation dashboard statistics for the student,
+     * including match scores, counts, application milestones, and top recommendation previews.
+     */
+    @Transactional(readOnly = true)
+    public StudentRecommendationDashboardResponse getStudentDashboard(String email) {
+        Student student = resolveStudent(email);
+
+        if (!hasProfileData(student)) {
+            return StudentRecommendationDashboardResponse.noProfile(
+                    "Please upload your resume first to unlock personalized AI recommendations and fit metrics.");
+        }
+
+        List<Recommendation> stored = recommendationRepository.findByStudentOrderByRankingAsc(student);
+        List<Recommendation> deduped = deduplicateRecommendations(stored);
+        long totalApplied = applicationRepository != null ? applicationRepository.countByStudent(student) : 0L;
+        long totalShortlisted = applicationRepository != null ? applicationRepository.countByStudentAndStatus(student, ApplicationStatus.SHORTLISTED) : 0L;
+        long totalAccepted = applicationRepository != null ? applicationRepository.countByStudentAndStatus(student, ApplicationStatus.ACCEPTED) : 0L;
+        long totalSaved = 0L; // Saved bookmarks slated for Phase 3
+
+        StudentRecommendationDashboardResponse resp = new StudentRecommendationDashboardResponse();
+        resp.setHasProfile(true);
+        resp.setTotalRecommended(deduped.size());
+        resp.setTotalSaved(totalSaved);
+        resp.setTotalApplied(totalApplied);
+        resp.setTotalShortlisted(totalShortlisted);
+        resp.setTotalAccepted(totalAccepted);
+
+        if (deduped.isEmpty()) {
+            resp.setTopRecommendations(Collections.emptyList());
+            resp.setSummaryMessage("No recommendations generated yet. Click 'Generate Recommendations' to begin.");
+            return resp;
+        }
+
+        resp.setLastComputedAt(deduped.get(0).getCreatedAt());
+        Double topScore = deduped.get(0).getSimilarityScore();
+        resp.setTopMatchScore(topScore);
+        resp.setTopMatchFitLevel(SkillAnalysisUtil.getFitLevel(topScore));
+
+        long bestCount = deduped.stream()
+                .filter(r -> r.getSimilarityScore() != null && r.getSimilarityScore() >= 0.70)
+                .count();
+        long strongCount = deduped.stream()
+                .filter(r -> r.getSimilarityScore() != null && r.getSimilarityScore() >= 0.50 && r.getSimilarityScore() < 0.70)
+                .count();
+        long goodCount = deduped.stream()
+                .filter(r -> r.getSimilarityScore() != null && r.getSimilarityScore() >= 0.30 && r.getSimilarityScore() < 0.50)
+                .count();
+
+        resp.setBestMatchCount(bestCount);
+        resp.setStrongMatchCount(strongCount);
+        resp.setGoodMatchCount(goodCount);
+
+        List<RecommendationItemResponse> topItems = new ArrayList<>();
+        for (int i = 0; i < Math.min(3, deduped.size()); i++) {
+            Recommendation rec = deduped.get(i);
+            com.internship.platform.entity.RiskAssessment risk = rec.getInternship() != null
+                    ? riskAssessmentRepository.findTopByInternshipOrderByCreatedAtDesc(rec.getInternship()).orElse(null)
+                    : null;
+            RecommendationItemResponse item = RecommendationItemResponse.from(rec, risk);
+            item.setRanking(i + 1);
+            topItems.add(item);
+        }
+
+        resp.setTopRecommendations(topItems);
+        resp.setSummaryMessage("Active AI match recommendations computed from your verified profile.");
+        return resp;
     }
 
     /**
@@ -136,12 +227,22 @@ public class RecommendationService {
             return RecommendationListResponse.empty("No open internships matched your filter criteria.");
         }
 
+        // Deduplicate eligible postings so duplicate seed/test internships never produce duplicate recommendations
+        Map<String, Internship> uniqueEligibleMap = new java.util.LinkedHashMap<>();
+        for (Internship in : eligible) {
+            Long compId = (in.getCompany() != null) ? in.getCompany().getId() : 0L;
+            String normTitle = (in.getTitle() != null) ? in.getTitle().trim().toLowerCase(java.util.Locale.ROOT) : "";
+            String dedupKey = compId + "::" + normTitle;
+            uniqueEligibleMap.putIfAbsent(dedupKey, in);
+        }
+        List<Internship> dedupedEligible = new ArrayList<>(uniqueEligibleMap.values());
+
         // Step 2: Format eligible postings for the AI service
         List<MatchInternshipItem> matchItems = new ArrayList<>();
-        Map<Long, Internship> internshipMap = eligible.stream()
+        Map<Long, Internship> internshipMap = dedupedEligible.stream()
                 .collect(Collectors.toMap(Internship::getId, Function.identity(), (a, b) -> a));
 
-        for (Internship in : eligible) {
+        for (Internship in : dedupedEligible) {
             String desc = (in.getDescription() != null && !in.getDescription().isBlank())
                     ? in.getDescription()
                     : (in.getTitle() != null ? in.getTitle() : "Internship opportunity");
@@ -198,6 +299,30 @@ public class RecommendationService {
                 .toList();
 
         return RecommendationListResponse.success(responseItems, now);
+    }
+
+    private List<Recommendation> deduplicateRecommendations(List<Recommendation> stored) {
+        if (stored == null || stored.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Recommendation> result = new ArrayList<>();
+        java.util.Set<String> seenRoles = new java.util.HashSet<>();
+        for (Recommendation rec : stored) {
+            if (rec.getInternship() == null) {
+                continue;
+            }
+            Long compId = (rec.getInternship().getCompany() != null)
+                    ? rec.getInternship().getCompany().getId()
+                    : 0L;
+            String normTitle = (rec.getInternship().getTitle() != null)
+                    ? rec.getInternship().getTitle().trim().toLowerCase(java.util.Locale.ROOT)
+                    : "";
+            String roleKey = compId + "::" + normTitle;
+            if (seenRoles.add(roleKey)) {
+                result.add(rec);
+            }
+        }
+        return result;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

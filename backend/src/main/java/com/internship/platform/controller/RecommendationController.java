@@ -2,6 +2,7 @@ package com.internship.platform.controller;
 
 import com.internship.platform.dto.InternshipSearchParams;
 import com.internship.platform.dto.RecommendationListResponse;
+import com.internship.platform.dto.StudentRecommendationDashboardResponse;
 import com.internship.platform.service.RecommendationService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Endpoints for student AI recommendations:
  *
  * GET  /api/recommendations          — returns current stored recommendations
+ * GET  /api/recommendations/dashboard — returns live match stats, application progress, and top recommendation previews
  * POST /api/recommendations/generate — runs hard filters, calls AI /match, stores & returns new ranking
  */
 @RestController
@@ -29,6 +31,11 @@ public class RecommendationController {
     @GetMapping
     public RecommendationListResponse getRecommendations(Authentication authentication) {
         return recommendationService.getRecommendations(authentication.getName());
+    }
+
+    @GetMapping("/dashboard")
+    public StudentRecommendationDashboardResponse getStudentDashboard(Authentication authentication) {
+        return recommendationService.getStudentDashboard(authentication.getName());
     }
 
     @PostMapping("/generate")

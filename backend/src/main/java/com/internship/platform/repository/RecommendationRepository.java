@@ -13,6 +13,10 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
 
     List<Recommendation> findByStudentOrderByRankingAsc(Student student);
 
+    List<Recommendation> findTop3ByStudentOrderByRankingAsc(Student student);
+
+    long countByStudent(Student student);
+
     @Modifying
     @Query("DELETE FROM Recommendation r WHERE r.student = :student")
     void deleteByStudent(@Param("student") Student student);

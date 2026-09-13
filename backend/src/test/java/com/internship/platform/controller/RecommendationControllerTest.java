@@ -91,4 +91,30 @@ class RecommendationControllerTest {
                 .andExpect(jsonPath("$.recommendations[0].similarityScore").value(0.92))
                 .andExpect(jsonPath("$.recommendations[0].title").value("Backend Engineer Intern"));
     }
+
+    @Test
+    @DisplayName("GET /api/recommendations/dashboard returns live metrics and top recommendations")
+    void getStudentDashboardReturnsMetrics() throws Exception {
+        com.internship.platform.dto.StudentRecommendationDashboardResponse dashboard =
+                new com.internship.platform.dto.StudentRecommendationDashboardResponse();
+        dashboard.setHasProfile(true);
+        dashboard.setTotalRecommended(5);
+        dashboard.setTotalApplied(2);
+        dashboard.setTotalShortlisted(1);
+        dashboard.setTotalAccepted(0);
+        dashboard.setTotalSaved(0);
+        dashboard.setTopMatchScore(0.87);
+        dashboard.setTopMatchFitLevel("Best Match");
+
+        when(recommendationService.getStudentDashboard("student@test.edu")).thenReturn(dashboard);
+
+        mockMvc.perform(get("/api/recommendations/dashboard").principal(auth("student@test.edu", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasProfile").value(true))
+                .andExpect(jsonPath("$.totalRecommended").value(5))
+                .andExpect(jsonPath("$.totalApplied").value(2))
+                .andExpect(jsonPath("$.totalShortlisted").value(1))
+                .andExpect(jsonPath("$.topMatchScore").value(0.87))
+                .andExpect(jsonPath("$.topMatchFitLevel").value("Best Match"));
+    }
 }

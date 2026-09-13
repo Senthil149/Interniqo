@@ -6,6 +6,9 @@ import com.internship.platform.dto.MatchInternshipItem;
 import com.internship.platform.dto.MatchResponse;
 import com.internship.platform.dto.MatchResultItem;
 import com.internship.platform.dto.RecommendationListResponse;
+import com.internship.platform.dto.StudentRecommendationDashboardResponse;
+import com.internship.platform.entity.Application;
+import com.internship.platform.entity.ApplicationStatus;
 import com.internship.platform.entity.Company;
 import com.internship.platform.entity.Internship;
 import com.internship.platform.entity.Recommendation;
@@ -13,6 +16,7 @@ import com.internship.platform.entity.Student;
 import com.internship.platform.entity.User;
 import com.internship.platform.entity.UserRole;
 import com.internship.platform.exception.ApiException;
+import com.internship.platform.repository.ApplicationRepository;
 import com.internship.platform.repository.InternshipRepository;
 import com.internship.platform.repository.RecommendationRepository;
 import com.internship.platform.repository.RiskAssessmentRepository;
@@ -57,6 +61,9 @@ class RecommendationServiceTest {
 
     @Mock
     private RiskAssessmentRepository riskAssessmentRepository;
+
+    @Mock
+    private ApplicationRepository applicationRepository;
 
     @Mock
     private AiServiceClient aiServiceClient;
@@ -215,5 +222,54 @@ class RecommendationServiceTest {
         assertEquals(1, response.getRecommendations().size());
         assertEquals(0.82, response.getRecommendations().get(0).getSimilarityScore());
         assertEquals("Java Backend Intern", response.getRecommendations().get(0).getTitle());
+        // Explainability & Skill-Gap populated
+        assertNotNull(response.getRecommendations().get(0).getMatchingStrengths());
+        assertFalse(response.getRecommendations().get(0).getMatchingStrengths().isEmpty());
+        assertNotNull(response.getRecommendations().get(0).getFitLevel());
+    }
+
+    @Test
+    @DisplayName("getStudentDashboard: Returns real database metrics for student")
+    void getStudentDashboard_returnsRealMetrics() {
+        Recommendation rec = new Recommendation(student, internship1, 0.85, 1, Instant.now());
+
+        when(userRepository.findByEmail("student@test.edu")).thenReturn(Optional.of(studentUser));
+        when(studentRepository.findByUser(studentUser)).thenReturn(Optional.of(student));
+        when(recommendationRepository.findByStudentOrderByRankingAsc(student)).thenReturn(List.of(rec));
+        when(applicationRepository.countByStudent(student)).thenReturn(4L);
+        when(applicationRepository.countByStudentAndStatus(student, ApplicationStatus.SHORTLISTED)).thenReturn(2L);
+        when(applicationRepository.countByStudentAndStatus(student, ApplicationStatus.ACCEPTED)).thenReturn(1L);
+
+        StudentRecommendationDashboardResponse dashboard = recommendationService.getStudentDashboard("student@test.edu");
+
+        assertNotNull(dashboard);
+        assertTrue(dashboard.isHasProfile());
+        assertEquals(1, dashboard.getTotalRecommended());
+        assertEquals(4, dashboard.getTotalApplied());
+        assertEquals(2, dashboard.getTotalShortlisted());
+        assertEquals(1, dashboard.getTotalAccepted());
+        assertEquals(0, dashboard.getTotalSaved());
+        assertEquals(0.85, dashboard.getTopMatchScore());
+        assertEquals("Best Match", dashboard.getTopMatchFitLevel());
+        assertEquals(1, dashboard.getBestMatchCount());
+        assertEquals(1, dashboard.getTopRecommendations().size());
+    }
+
+    @Test
+    @DisplayName("getStudentDashboard: Returns noProfile status if student has no resume/profile")
+    void getStudentDashboard_noProfile_returnsPrompt() {
+        Student emptyStudent = new Student();
+        emptyStudent.setId(99L);
+        emptyStudent.setUser(studentUser);
+
+        when(userRepository.findByEmail("student@test.edu")).thenReturn(Optional.of(studentUser));
+        when(studentRepository.findByUser(studentUser)).thenReturn(Optional.of(emptyStudent));
+
+        StudentRecommendationDashboardResponse dashboard = recommendationService.getStudentDashboard("student@test.edu");
+
+        assertNotNull(dashboard);
+        assertFalse(dashboard.isHasProfile());
+        assertEquals(0, dashboard.getTotalRecommended());
+        assertTrue(dashboard.getSummaryMessage().contains("upload your resume first"));
     }
 }

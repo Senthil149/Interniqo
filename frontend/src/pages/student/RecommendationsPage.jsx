@@ -61,29 +61,45 @@ function AnimatedScore({ value, duration = 0.6 }) {
 }
 
 /**
+ * Authoritative fit level classification rule:
+ * - >= 0.700: Best Match
+ * - 0.500–0.699: Strong Match
+ * - 0.300–0.499: Good Match
+ * - < 0.300: Fair Match
+ */
+export function getFitLevel(score) {
+  if (score == null) return 'Fair Match'
+  if (score >= 0.70) return 'Best Match'
+  if (score >= 0.50) return 'Strong Match'
+  if (score >= 0.30) return 'Good Match'
+  return 'Fair Match'
+}
+
+/**
  * SignalBadge with Category 4 Animations:
  * - Fill bar grows from 0 to target over ~600ms on viewport entry
  * - Numeric score counts up from 0 to final value over ~600ms
+ * - Authoritative fit-level classification
  */
 function SignalBadge({ score }) {
   const normalizedWidth = Math.max(5, Math.min(100, Math.round(((score + 0.2) / 1.1) * 100)))
+  const signalText = getFitLevel(score)
 
   let badgeColor = 'bg-slate-50 text-slate-700 border-slate-200'
   let barColor = 'bg-slate-400'
-  let signalText = 'Baseline'
 
-  if (score >= 0.55) {
+  if (score >= 0.70) {
+    badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-300'
+    barColor = 'bg-gradient-to-r from-emerald-600 to-teal-500'
+  } else if (score >= 0.50) {
     badgeColor = 'bg-success-50 text-success-800 border-success-200'
     barColor = 'bg-gradient-to-r from-success-600 to-primary-600'
-    signalText = 'Strong Match'
-  } else if (score >= 0.3) {
+  } else if (score >= 0.30) {
     badgeColor = 'bg-primary-50 text-primary-800 border-primary-200'
     barColor = 'bg-gradient-to-r from-primary-600 to-teal-400'
-    signalText = 'Moderate Match'
-  } else if (score > 0.1) {
+  } else {
     badgeColor = 'bg-accent-50 text-accent-800 border-accent-200'
     barColor = 'bg-gradient-to-r from-accent-500 to-amber-600'
-    signalText = 'Fair Match'
   }
 
   return (
@@ -107,8 +123,10 @@ function SignalBadge({ score }) {
 }
 
 function RecommendationCard({ rec }) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const workModeClass =
     WORK_MODE_COLORS[rec.workMode] ?? 'bg-slate-100 text-slate-600 border-slate-200'
+  const fitLevel = rec.fitLevel || getFitLevel(rec.similarityScore)
 
   return (
     <motion.div
@@ -179,6 +197,148 @@ function RecommendationCard({ rec }) {
             <span className="line-clamp-2">{rec.requiredSkills}</span>
           </div>
         )}
+
+        {/* Interactive Explainable AI Recommendations & Skill-Gap Analysis Accordion */}
+        <div className="mt-3 overflow-hidden rounded-xl border border-primary-200/70 bg-gradient-to-b from-primary-50/20 via-white to-slate-50/40">
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            aria-expanded={isExpanded}
+            className="w-full flex items-center justify-between p-3 text-left transition-colors hover:bg-primary-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
+                ⚡
+              </span>
+              <span className="font-heading text-xs font-bold text-slate-800">
+                Why this was recommended
+              </span>
+              {fitLevel && (
+                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800 border border-primary-200">
+                  {fitLevel}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-xs font-medium text-primary-700">
+              <span className="text-[11px] hidden sm:inline">{isExpanded ? 'Hide' : 'Expand'}</span>
+              <motion.span
+                animate={{ rotate: isExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="inline-block text-xs"
+              >
+                ▼
+              </motion.span>
+            </div>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isExpanded && (
+              <motion.div
+                key="explanation-content"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden border-t border-primary-100/70 p-3.5 space-y-3.5 bg-white/60"
+              >
+                {/* Matching Strengths */}
+                {rec.matchingStrengths && rec.matchingStrengths.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      MATCHING STRENGTHS
+                    </span>
+                    <div className="space-y-1 text-slate-700">
+                      {rec.matchingStrengths.map((str, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5 text-xs">
+                          <span className="font-bold text-emerald-600 flex-shrink-0">✓</span>
+                          <span className="text-slate-800 font-medium">{str}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preference Matches */}
+                {rec.preferenceMatches && rec.preferenceMatches.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      PREFERENCE MATCHES
+                    </span>
+                    <div className="space-y-1 text-slate-700">
+                      {rec.preferenceMatches.map((pref, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5 text-xs">
+                          <span className="font-bold text-teal-600 flex-shrink-0">✓</span>
+                          <span className="text-slate-800 font-medium">{pref}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Skill Gap Analysis */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-200/60">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    SKILL GAP
+                  </span>
+
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2.5 space-y-1.5">
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+                        <span>✓</span> Your Skills ({rec.matchedSkills?.length || 0})
+                      </div>
+                      {rec.matchedSkills && rec.matchedSkills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {rec.matchedSkills.map((sk, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200 shadow-2xs"
+                            >
+                              ✓ {sk}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500 italic">No direct skill matches recorded</span>
+                      )}
+                    </div>
+
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2.5 space-y-1.5">
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-amber-800">
+                        <span>⚠</span> Skills to Improve ({rec.missingSkills?.length || 0})
+                      </div>
+                      {rec.missingSkills && rec.missingSkills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {rec.missingSkills.map((sk, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200 shadow-2xs"
+                            >
+                              ⚠ {sk}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-emerald-700 font-medium">All core skills covered!</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {rec.skillGapMessage && (
+                    <div className="rounded-lg border border-teal-200/80 bg-teal-50/80 p-2.5 text-xs text-teal-900 flex items-start gap-2">
+                      <span className="font-bold flex-shrink-0 text-sm">💡</span>
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-teal-950 block text-[11px] uppercase tracking-wide">
+                          Skill-gap guidance:
+                        </span>
+                        <span className="leading-snug">"{rec.skillGapMessage}"</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-slate-100 pt-3">
@@ -262,8 +422,21 @@ export function RecommendationsPage() {
     setFilters((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
   }
 
-  function handleClearFilters() {
+  async function handleClearFilters() {
     setFilters(EMPTY_FILTERS)
+    setGenerating(true)
+    setError('')
+    try {
+      const { data } = await generateRecommendations({})
+      setHasProfile(data.hasProfile)
+      setRecommendations(data.recommendations || [])
+      setGeneratedAt(data.generatedAt)
+      if (data.message) setMessage(data.message)
+    } catch {
+      loadRecommendations()
+    } finally {
+      setGenerating(false)
+    }
   }
 
   return (
@@ -483,32 +656,74 @@ export function RecommendationsPage() {
       )}
 
       {/* Recommendations Results List with layout reordering & staggered entrance */}
-      {!loading && hasProfile && recommendations.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
-            <p>
-              Showing <span className="font-semibold text-slate-800">{recommendations.length}</span> ranked opportunities
-              {generatedAt && (
-                <span className="text-xs text-slate-400">
-                  {' '}• Computed {new Date(generatedAt).toLocaleDateString()} at {new Date(generatedAt).toLocaleTimeString()}
+      {!loading && hasProfile && recommendations.length > 0 && (() => {
+        const dedupedRecommendations = recommendations.filter((item, index, self) =>
+          index === self.findIndex((t) => (t.internshipId != null && t.internshipId === item.internshipId) ||
+            (t.companyName === item.companyName && t.title === item.title))
+        )
+
+        return (
+          <div className="space-y-4">
+            {/* Recommendation Overview Stats */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="card-base p-4 bg-white border-primary-100/80 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">AI Recommendations</span>
+                <div className="mt-1 text-2xl font-bold font-heading text-slate-900">{dedupedRecommendations.length}</div>
+                <span className="text-[11px] text-slate-500">Active opportunities</span>
+              </div>
+
+              <div className="card-base p-4 bg-white border-emerald-100 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Top Match Score</span>
+                <div className="mt-1 text-2xl font-bold font-mono text-emerald-700">
+                  {dedupedRecommendations[0]?.similarityScore != null ? dedupedRecommendations[0].similarityScore.toFixed(3) : '—'}
+                </div>
+                <span className="text-[11px] font-semibold text-emerald-600">
+                  {getFitLevel(dedupedRecommendations[0]?.similarityScore)}
                 </span>
-              )}
-            </p>
+              </div>
 
-            <div className="text-xs text-slate-600 bg-slate-100 rounded-lg px-3 py-1 border border-warm-border">
-              ℹ️ Match scores represent skill alignment with job requirements. They do not guarantee an interview or offer.
+              <div className="card-base p-4 bg-white border-primary-100 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strong Matches</span>
+                <div className="mt-1 text-2xl font-bold font-heading text-primary-700">
+                  {dedupedRecommendations.filter((r) => (r.similarityScore ?? 0) >= 0.50).length}
+                </div>
+                <span className="text-[11px] text-slate-500">Score &ge; 0.500</span>
+              </div>
+
+              <div className="card-base p-4 bg-white border-amber-100 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Good Matches</span>
+                <div className="mt-1 text-2xl font-bold font-heading text-amber-600">
+                  {dedupedRecommendations.filter((r) => (r.similarityScore ?? 0) >= 0.30 && (r.similarityScore ?? 0) < 0.50).length}
+                </div>
+                <span className="text-[11px] text-slate-500">Score 0.300 – 0.499</span>
+              </div>
             </div>
-          </div>
 
-          <motion.div layout className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <AnimatePresence>
-              {recommendations.map((rec) => (
-                <RecommendationCard key={rec.id} rec={rec} />
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        </div>
-      )}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+              <p>
+                Showing <span className="font-semibold text-slate-800">{dedupedRecommendations.length}</span> ranked opportunities
+                {generatedAt && (
+                  <span className="text-xs text-slate-400">
+                    {' '}• Computed {new Date(generatedAt).toLocaleDateString()} at {new Date(generatedAt).toLocaleTimeString()}
+                  </span>
+                )}
+              </p>
+
+              <div className="text-xs text-slate-600 bg-slate-100 rounded-lg px-3 py-1 border border-warm-border">
+                ℹ️ Match scores represent skill alignment with job requirements. They do not guarantee an interview or offer.
+              </div>
+            </div>
+
+            <motion.div layout className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <AnimatePresence>
+                {dedupedRecommendations.map((rec) => (
+                  <RecommendationCard key={rec.id || rec.internshipId} rec={rec} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

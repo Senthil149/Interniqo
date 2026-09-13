@@ -1,7 +1,17 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { MotionLink } from '../components/MotionButton.jsx'
+import { getRecommendationDashboard, getRecommendations } from '../api/recommendations.js'
+
+function getFitLevel(score) {
+  if (score == null) return 'Fair Match'
+  if (score >= 0.70) return 'Best Match'
+  if (score >= 0.50) return 'Strong Match'
+  if (score >= 0.30) return 'Good Match'
+  return 'Fair Match'
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -24,8 +34,50 @@ const itemVariants = {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-
   const role = user?.role || 'STUDENT'
+  const [dashboardData, setDashboardData] = useState(null)
+  const [loadingMetrics, setLoadingMetrics] = useState(false)
+
+  useEffect(() => {
+    if (role === 'STUDENT') {
+      setLoadingMetrics(true)
+      getRecommendationDashboard()
+        .then(({ data }) => {
+          setDashboardData(data)
+        })
+        .catch(async (err) => {
+          console.warn('Dashboard endpoint fallback via getRecommendations:', err)
+          try {
+            const { data } = await getRecommendations()
+            const rawRecs = data.recommendations || []
+            const recs = rawRecs.filter((item, index, self) =>
+              index === self.findIndex((t) => (t.internshipId != null && t.internshipId === item.internshipId) ||
+                (t.companyName === item.companyName && t.title === item.title))
+            )
+            const topScore = recs.length > 0 ? recs[0].similarityScore : null
+            setDashboardData({
+              hasProfile: data.hasProfile ?? true,
+              totalRecommended: recs.length,
+              totalSaved: 0,
+              totalApplied: 0,
+              totalShortlisted: 0,
+              totalAccepted: 0,
+              topMatchScore: topScore,
+              topMatchFitLevel: getFitLevel(topScore),
+              bestMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.70).length,
+              strongMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.50 && (r.similarityScore ?? 0) < 0.70).length,
+              goodMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.30 && (r.similarityScore ?? 0) < 0.50).length,
+              topRecommendations: recs.slice(0, 3),
+              lastComputedAt: data.generatedAt,
+              summaryMessage: data.message,
+            })
+          } catch {
+            setDashboardData(null)
+          }
+        })
+        .finally(() => setLoadingMetrics(false))
+    }
+  }, [role])
 
   return (
     <motion.div
@@ -84,17 +136,23 @@ export default function DashboardPage() {
       {/* STUDENT DASHBOARD */}
       {role === 'STUDENT' && (
         <>
-          {/* Quick Stat Highlights */}
+          {/* Real Database Recommendation Dashboard Stats */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="card-base card-hover">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Skill Matching</span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold">
+                <span className="text-xs font-semibold uppercase tracking-wider">AI Recommendations</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-600 font-bold">
                   ⚡
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">Active Fit</div>
-              <div className="mt-1 text-xs text-slate-500">Ranked by contextual skill alignment</div>
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+                {loadingMetrics ? '…' : `${dashboardData?.totalRecommended ?? 0} Roles`}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {dashboardData?.topMatchScore != null
+                  ? `Top: ${dashboardData.topMatchScore.toFixed(3)} (${dashboardData.topMatchFitLevel || getFitLevel(dashboardData.topMatchScore)})`
+                  : 'SBERT semantic skill fit'}
+              </div>
             </div>
 
             <div className="card-base card-hover">
@@ -104,19 +162,27 @@ export default function DashboardPage() {
                   📄
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">Tracked</div>
-              <div className="mt-1 text-xs text-slate-500">Multi-step hiring timeline</div>
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+                {loadingMetrics ? '…' : `${dashboardData?.totalApplied ?? 0} Submitted`}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {dashboardData
+                  ? `${dashboardData.totalShortlisted} Shortlisted • ${dashboardData.totalAccepted} Accepted`
+                  : 'Track multi-step hiring timeline'}
+              </div>
             </div>
 
             <div className="card-base card-hover">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Risk Audit</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">Saved Internships</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 font-bold">
-                  🛡️
+                  🔖
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">Multi-Signal</div>
-              <div className="mt-1 text-xs text-slate-500">Automated stipend &amp; domain checks</div>
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+                {loadingMetrics ? '…' : `${dashboardData?.totalSaved ?? 0} Saved`}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">Bookmarked opportunities</div>
             </div>
 
             <div className="card-base card-hover">
@@ -126,10 +192,108 @@ export default function DashboardPage() {
                   🛡️
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900">Digital Proof</div>
-              <div className="mt-1 text-xs text-slate-500">Publicly verifiable completion records</div>
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+                {loadingMetrics
+                  ? '…'
+                  : (dashboardData?.totalAccepted ?? 0) > 0
+                  ? `${dashboardData.totalAccepted} Eligible`
+                  : '0 Issued'}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">Public blockchain records</div>
             </div>
           </div>
+
+          {/* Top AI Recommended Roles (if available) */}
+          {dashboardData?.topRecommendations?.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-heading text-lg font-bold text-slate-900">Top AI Matches</h2>
+                  <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-bold text-primary-800">
+                    SBERT Ranked
+                  </span>
+                </div>
+                <Link
+                  to="/student/recommendations"
+                  className="text-xs font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+                >
+                  View All ({dashboardData.totalRecommended}) →
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {dashboardData.topRecommendations
+                  .filter((item, index, self) =>
+                    index === self.findIndex((t) => (t.internshipId != null && t.internshipId === item.internshipId) ||
+                      (t.companyName === item.companyName && t.title === item.title))
+                  )
+                  .slice(0, 3)
+                  .map((item, idx) => {
+                    const fit = item.fitLevel || getFitLevel(item.similarityScore)
+                    return (
+                      <div
+                        key={item.id || item.internshipId || idx}
+                        className="card-base card-hover p-4 bg-white flex flex-col justify-between space-y-3 border-primary-100/70"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-800 border border-primary-200">
+                              #{item.ranking || (idx + 1)} • {fit}
+                            </span>
+                            <span className="font-mono text-xs font-bold text-emerald-700">
+                              {item.similarityScore != null ? item.similarityScore.toFixed(3) : ''}
+                            </span>
+                          </div>
+                          <Link
+                            to={`/internships/${item.internshipId}`}
+                            className="mt-2 block font-heading font-bold text-slate-900 hover:text-primary-700 text-sm transition-colors"
+                          >
+                            {item.title}
+                          </Link>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            {item.companyName} • 📍 {item.country}
+                          </div>
+
+                          {item.matchedSkills && item.matchedSkills.length > 0 && (
+                            <div className="mt-2.5 flex flex-wrap gap-1">
+                              {item.matchedSkills.slice(0, 3).map((sk, skIdx) => (
+                                <span
+                                  key={skIdx}
+                                  className="rounded bg-emerald-50 text-[10px] font-semibold text-emerald-700 px-1.5 py-0.5 border border-emerald-200/60"
+                                >
+                                  ✓ {sk}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {item.matchingStrengths && item.matchingStrengths.length > 0 && (
+                            <div className="mt-2 text-[11px] text-slate-600 flex items-start gap-1">
+                              <span className="text-emerald-600 font-bold">✓</span>
+                              <span className="line-clamp-1">{item.matchingStrengths[0]}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                          <span className="text-slate-500 font-medium">
+                            {item.stipend != null
+                              ? `${item.stipend} ${item.currency || ''}/mo`
+                              : item.workMode}
+                          </span>
+                          <Link
+                            to={`/internships/${item.internshipId}`}
+                            className="font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+                          >
+                            View Details →
+                          </Link>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions Grid */}
           <div className="space-y-4">

@@ -19,6 +19,10 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     List<Application> findByStudentOrderByAppliedAtDesc(Student student);
 
+    long countByStudent(Student student);
+
+    long countByStudentAndStatus(Student student, com.internship.platform.entity.ApplicationStatus status);
+
     List<Application> findByInternshipCompanyOrderByAppliedAtDesc(Company company);
 
     List<Application> findByInternshipCompanyAndInternshipOrderByAppliedAtDesc(Company company, Internship internship);

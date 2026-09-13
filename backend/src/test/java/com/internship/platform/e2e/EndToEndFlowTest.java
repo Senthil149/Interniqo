@@ -189,6 +189,8 @@ class EndToEndFlowTest {
             recs.forEach(recommendationStore::add);
             return recommendationStore;
         });
+        when(recommendationRepository.findByStudentOrderByRankingAsc(any(Student.class))).thenAnswer(inv ->
+                new ArrayList<>(recommendationStore));
         doAnswer(inv -> {
             recommendationStore.clear();
             return null;
@@ -349,6 +351,7 @@ class EndToEndFlowTest {
                 internshipRepository,
                 recommendationRepository,
                 riskAssessmentRepository,
+                applicationRepository,
                 aiServiceClient
         );
 
@@ -526,6 +529,19 @@ class EndToEndFlowTest {
         assertEquals(1, topRec.getRanking());
         // Design Rule #2: Raw cosine similarity score stored as ranking signal (never percentage / probability)
         assertEquals(0.91, topRec.getSimilarityScore());
+        // Phase 1 verification: Explainability and skill gap populated
+        assertNotNull(topRec.getMatchingStrengths());
+        assertFalse(topRec.getMatchingStrengths().isEmpty());
+        assertNotNull(topRec.getFitLevel());
+
+        // Recommendation Dashboard verification
+        StudentRecommendationDashboardResponse dashboardResp =
+                recommendationService.getStudentDashboard(studentEmail);
+        assertNotNull(dashboardResp);
+        assertTrue(dashboardResp.isHasProfile());
+        assertEquals(1, dashboardResp.getTotalRecommended());
+        assertEquals(0.91, dashboardResp.getTopMatchScore());
+        assertEquals("Best Match", dashboardResp.getTopMatchFitLevel());
 
         // =========================================================================
         // STEP 4: Application Submission
