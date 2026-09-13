@@ -180,4 +180,122 @@ class StudentServiceTest {
         assertEquals("CS Degree", profile.getEducation());
         assertEquals("resume.pdf", profile.getResumeFileName());
     }
+
+    @Test
+    @DisplayName("updateProfile: Updates User name and Student profile fields")
+    void updateProfile_validRequest_success() {
+        when(userRepository.findByEmail("student@university.edu")).thenReturn(Optional.of(user));
+        when(studentRepository.findByUser(user)).thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.internship.platform.dto.StudentProfileUpdateRequest req = new com.internship.platform.dto.StudentProfileUpdateRequest();
+        req.setName("Charles Student Updated");
+        req.setProfessionalHeadline("Full Stack Java & React Engineer");
+        req.setLocation("Berlin, Germany");
+        req.setCollege("Technical University of Munich");
+        req.setBio("Passionate developer focusing on distributed cloud systems.");
+        req.setGithubUrl("github.com/charles-dev");
+        req.setLinkedinUrl("linkedin.com/in/charles-dev");
+        req.setPortfolioUrl("https://charles.dev");
+        req.setSkills(java.util.List.of("Java", "Spring Boot", "React"));
+
+        StudentProfileResponse resp = studentService.updateProfile("student@university.edu", req);
+
+        assertNotNull(resp);
+        assertEquals("Charles Student Updated", resp.getName());
+        assertEquals("Full Stack Java & React Engineer", resp.getProfessionalHeadline());
+        assertEquals("Berlin, Germany", resp.getLocation());
+        assertEquals("Technical University of Munich", resp.getCollege());
+        assertEquals("Passionate developer focusing on distributed cloud systems.", resp.getBio());
+        assertEquals("https://github.com/charles-dev", resp.getGithubUrl());
+        assertEquals("https://linkedin.com/in/charles-dev", resp.getLinkedinUrl());
+        assertEquals("https://charles.dev", resp.getPortfolioUrl());
+        assertTrue(resp.getSkillList().contains("Java"));
+        assertTrue(resp.getSkillList().contains("Spring Boot"));
+        assertTrue(resp.getSkillList().contains("React"));
+    }
+
+    @Test
+    @DisplayName("updateProfile: Skills are normalized and deduplicated")
+    void updateProfile_skillsDeduplication() {
+        when(userRepository.findByEmail("student@university.edu")).thenReturn(Optional.of(user));
+        when(studentRepository.findByUser(user)).thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.internship.platform.dto.StudentProfileUpdateRequest req = new com.internship.platform.dto.StudentProfileUpdateRequest();
+        req.setSkills(java.util.List.of("java", "Java", "react", "React", "Spring Boot"));
+
+        StudentProfileResponse resp = studentService.updateProfile("student@university.edu", req);
+
+        assertNotNull(resp);
+        assertEquals(3, resp.getSkillList().size());
+        assertTrue(resp.getSkillList().contains("Java"));
+        assertTrue(resp.getSkillList().contains("React"));
+        assertTrue(resp.getSkillList().contains("Spring Boot"));
+    }
+
+    @Test
+    @DisplayName("uploadProfilePhoto: Valid image is saved to disk and updates photo URL")
+    void uploadProfilePhoto_validImage_success() {
+        MockMultipartFile photo = new MockMultipartFile(
+                "file",
+                "avatar.png",
+                "image/png",
+                new byte[]{ (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A }
+        );
+
+        when(userRepository.findByEmail("student@university.edu")).thenReturn(Optional.of(user));
+        when(studentRepository.findByUser(user)).thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StudentProfileResponse resp = studentService.uploadProfilePhoto("student@university.edu", photo);
+
+        assertNotNull(resp);
+        assertNotNull(resp.getProfilePhotoUrl());
+        assertTrue(resp.getProfilePhotoUrl().startsWith("/api/photos/photo_student_10_"));
+        assertTrue(resp.getProfilePhotoUrl().endsWith(".png"));
+    }
+
+    @Test
+    @DisplayName("uploadProfilePhoto: Invalid file type is rejected with BAD_REQUEST")
+    void uploadProfilePhoto_invalidType_throwsBadRequest() {
+        MockMultipartFile badFile = new MockMultipartFile(
+                "file",
+                "malicious.exe",
+                "application/octet-stream",
+                "not an image".getBytes()
+        );
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> studentService.uploadProfilePhoto("student@university.edu", badFile));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("removeProfilePhoto: Clears photo path and URL")
+    void removeProfilePhoto_success() {
+        student.setProfilePhotoUrl("/api/photos/photo_student_10_123.png");
+        student.setProfilePhotoPath(tempUploadDir.resolve("photo_student_10_123.png").toString());
+
+        when(userRepository.findByEmail("student@university.edu")).thenReturn(Optional.of(user));
+        when(studentRepository.findByUser(user)).thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StudentProfileResponse resp = studentService.removeProfilePhoto("student@university.edu");
+
+        assertNotNull(resp);
+        assertNull(resp.getProfilePhotoUrl());
+    }
+
+    @Test
+    @DisplayName("getResumeResource: Throws NOT_FOUND when no resume exists")
+    void getResumeResource_noResume_throwsNotFound() {
+        student.setResumePath(null);
+        when(userRepository.findByEmail("student@university.edu")).thenReturn(Optional.of(user));
+        when(studentRepository.findByUser(user)).thenReturn(Optional.of(student));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> studentService.getResumeResource("student@university.edu"));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+    }
 }

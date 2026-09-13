@@ -16,6 +16,7 @@ import CompanyProfilePage from './pages/company/CompanyProfilePage.jsx'
 import InternshipSearchPage from './pages/student/InternshipSearchPage.jsx'
 import InternshipDetailPage from './pages/student/InternshipDetailPage.jsx'
 import ResumeUploadPage from './pages/student/ResumeUploadPage.jsx'
+import StudentProfilePage from './pages/student/StudentProfilePage.jsx'
 import RecommendationsPage from './pages/student/RecommendationsPage.jsx'
 import MyApplicationsPage from './pages/student/MyApplicationsPage.jsx'
 import VerifyEmailPage from './pages/VerifyEmailPage.jsx'
@@ -92,6 +93,7 @@ function NavBar() {
             <AnimatedNavLink to="/student/recommendations">Recommendations</AnimatedNavLink>
             <AnimatedNavLink to="/student/applications">My Applications</AnimatedNavLink>
             <AnimatedNavLink to="/student/resume">Resume</AnimatedNavLink>
+            <AnimatedNavLink to="/student/profile">Profile</AnimatedNavLink>
           </div>
         )}
 
@@ -299,6 +301,14 @@ function AppRoutes() {
                 element={
                   <ProtectedRoute requiredRole="STUDENT">
                     <ResumeUploadPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/profile"
+                element={
+                  <ProtectedRoute requiredRole="STUDENT">
+                    <StudentProfilePage />
                   </ProtectedRoute>
                 }
               />

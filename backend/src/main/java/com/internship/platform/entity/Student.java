@@ -46,6 +46,33 @@ public class Student {
     @Column(name = "resume_path", length = 1024)
     private String resumePath;
 
+    @Column(name = "professional_headline", length = 255)
+    private String professionalHeadline;
+
+    @Column(length = 255)
+    private String location;
+
+    @Column(length = 255)
+    private String college;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = "profile_photo_url", length = 1024)
+    private String profilePhotoUrl;
+
+    @Column(name = "profile_photo_path", length = 1024)
+    private String profilePhotoPath;
+
+    @Column(name = "github_url", length = 512)
+    private String githubUrl;
+
+    @Column(name = "linkedin_url", length = 512)
+    private String linkedinUrl;
+
+    @Column(name = "portfolio_url", length = 512)
+    private String portfolioUrl;
+
     public Long getId() {
         return id;
     }
@@ -124,5 +151,77 @@ public class Student {
 
     public void setResumePath(String resumePath) {
         this.resumePath = resumePath;
+    }
+
+    public String getProfessionalHeadline() {
+        return professionalHeadline;
+    }
+
+    public void setProfessionalHeadline(String professionalHeadline) {
+        this.professionalHeadline = professionalHeadline;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getCollege() {
+        return college;
+    }
+
+    public void setCollege(String college) {
+        this.college = college;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getProfilePhotoUrl() {
+        return profilePhotoUrl;
+    }
+
+    public void setProfilePhotoUrl(String profilePhotoUrl) {
+        this.profilePhotoUrl = profilePhotoUrl;
+    }
+
+    public String getProfilePhotoPath() {
+        return profilePhotoPath;
+    }
+
+    public void setProfilePhotoPath(String profilePhotoPath) {
+        this.profilePhotoPath = profilePhotoPath;
+    }
+
+    public String getGithubUrl() {
+        return githubUrl;
+    }
+
+    public void setGithubUrl(String githubUrl) {
+        this.githubUrl = githubUrl;
+    }
+
+    public String getLinkedinUrl() {
+        return linkedinUrl;
+    }
+
+    public void setLinkedinUrl(String linkedinUrl) {
+        this.linkedinUrl = linkedinUrl;
+    }
+
+    public String getPortfolioUrl() {
+        return portfolioUrl;
+    }
+
+    public void setPortfolioUrl(String portfolioUrl) {
+        this.portfolioUrl = portfolioUrl;
     }
 }

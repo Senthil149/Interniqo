@@ -63,8 +63,9 @@ public class SecurityConfig {
                                 "/api/auth/verify-email", "/api/auth/verify-code", "/api/auth/resend-code",
                                 "/api/auth/resend-verification",
                                 "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
-                        // Public read-only internship detail — no auth required
+                        // Public read-only internship detail and profile photos — no auth required
                         .requestMatchers(HttpMethod.GET, "/api/internships/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/photos/**").permitAll()
                         .requestMatchers("/api/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/recommendations/**").hasRole("STUDENT")
                         .requestMatchers("/api/company/**").hasRole("COMPANY")
