@@ -15,6 +15,7 @@ import com.internship.platform.entity.Student;
 import com.internship.platform.entity.User;
 import com.internship.platform.exception.ApiException;
 import com.internship.platform.repository.ApplicationRepository;
+import com.internship.platform.repository.CredentialRepository;
 import com.internship.platform.repository.InternshipRepository;
 import com.internship.platform.repository.RecommendationRepository;
 import com.internship.platform.entity.StudentPreference;
@@ -66,6 +67,7 @@ public class RecommendationService {
     private final RiskAssessmentRepository riskAssessmentRepository;
     private final ApplicationRepository applicationRepository;
     private final AiServiceClient aiServiceClient;
+    private final CredentialRepository credentialRepository;
 
     @Autowired
     public RecommendationService(
@@ -76,7 +78,8 @@ public class RecommendationService {
             RecommendationRepository recommendationRepository,
             RiskAssessmentRepository riskAssessmentRepository,
             ApplicationRepository applicationRepository,
-            AiServiceClient aiServiceClient) {
+            AiServiceClient aiServiceClient,
+            @Autowired(required = false) CredentialRepository credentialRepository) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.studentPreferenceRepository = studentPreferenceRepository;
@@ -85,6 +88,19 @@ public class RecommendationService {
         this.riskAssessmentRepository = riskAssessmentRepository;
         this.applicationRepository = applicationRepository;
         this.aiServiceClient = aiServiceClient;
+        this.credentialRepository = credentialRepository;
+    }
+
+    public RecommendationService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            StudentPreferenceRepository studentPreferenceRepository,
+            InternshipRepository internshipRepository,
+            RecommendationRepository recommendationRepository,
+            RiskAssessmentRepository riskAssessmentRepository,
+            ApplicationRepository applicationRepository,
+            AiServiceClient aiServiceClient) {
+        this(userRepository, studentRepository, studentPreferenceRepository, internshipRepository, recommendationRepository, riskAssessmentRepository, applicationRepository, aiServiceClient, null);
     }
 
     public RecommendationService(
@@ -95,7 +111,7 @@ public class RecommendationService {
             RiskAssessmentRepository riskAssessmentRepository,
             ApplicationRepository applicationRepository,
             AiServiceClient aiServiceClient) {
-        this(userRepository, studentRepository, null, internshipRepository, recommendationRepository, riskAssessmentRepository, applicationRepository, aiServiceClient);
+        this(userRepository, studentRepository, null, internshipRepository, recommendationRepository, riskAssessmentRepository, applicationRepository, aiServiceClient, null);
     }
 
     public RecommendationService(
@@ -105,7 +121,7 @@ public class RecommendationService {
             RecommendationRepository recommendationRepository,
             RiskAssessmentRepository riskAssessmentRepository,
             AiServiceClient aiServiceClient) {
-        this(userRepository, studentRepository, null, internshipRepository, recommendationRepository, riskAssessmentRepository, null, aiServiceClient);
+        this(userRepository, studentRepository, null, internshipRepository, recommendationRepository, riskAssessmentRepository, null, aiServiceClient, null);
     }
 
     /**
@@ -163,7 +179,9 @@ public class RecommendationService {
         long totalApplied = applicationRepository != null ? applicationRepository.countByStudent(student) : 0L;
         long totalShortlisted = applicationRepository != null ? applicationRepository.countByStudentAndStatus(student, ApplicationStatus.SHORTLISTED) : 0L;
         long totalAccepted = applicationRepository != null ? applicationRepository.countByStudentAndStatus(student, ApplicationStatus.ACCEPTED) : 0L;
-        long totalSaved = 0L; // Saved bookmarks slated for Phase 3
+        long totalCompleted = applicationRepository != null ? applicationRepository.countByStudentAndStatus(student, ApplicationStatus.COMPLETED) : 0L;
+        long totalCredentials = credentialRepository != null ? credentialRepository.countByStudent(student) : 0L;
+        long totalSaved = 0L;
 
         StudentRecommendationDashboardResponse resp = new StudentRecommendationDashboardResponse();
         resp.setHasProfile(true);
@@ -172,6 +190,8 @@ public class RecommendationService {
         resp.setTotalApplied(totalApplied);
         resp.setTotalShortlisted(totalShortlisted);
         resp.setTotalAccepted(totalAccepted);
+        resp.setTotalCompleted(totalCompleted);
+        resp.setTotalCredentials(totalCredentials);
 
         if (deduped.isEmpty()) {
             resp.setTopRecommendations(Collections.emptyList());

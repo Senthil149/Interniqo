@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { MotionLink } from '../components/MotionButton.jsx'
 import { getRecommendationDashboard, getRecommendations } from '../api/recommendations.js'
+import { getMyCredentials } from '../api/credentials.js'
 
 function getFitLevel(score) {
   if (score == null) return 'Fair Match'
@@ -41,38 +42,50 @@ export default function DashboardPage() {
   useEffect(() => {
     if (role === 'STUDENT') {
       setLoadingMetrics(true)
-      getRecommendationDashboard()
-        .then(({ data }) => {
-          setDashboardData(data)
-        })
-        .catch(async (err) => {
-          console.warn('Dashboard endpoint fallback via getRecommendations:', err)
-          try {
-            const { data } = await getRecommendations()
-            const rawRecs = data.recommendations || []
-            const recs = rawRecs.filter((item, index, self) =>
-              index === self.findIndex((t) => (t.internshipId != null && t.internshipId === item.internshipId) ||
-                (t.companyName === item.companyName && t.title === item.title))
-            )
-            const topScore = recs.length > 0 ? recs[0].similarityScore : null
-            setDashboardData({
-              hasProfile: data.hasProfile ?? true,
-              totalRecommended: recs.length,
-              totalSaved: 0,
-              totalApplied: 0,
-              totalShortlisted: 0,
-              totalAccepted: 0,
-              topMatchScore: topScore,
-              topMatchFitLevel: getFitLevel(topScore),
-              bestMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.70).length,
-              strongMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.50 && (r.similarityScore ?? 0) < 0.70).length,
-              goodMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.30 && (r.similarityScore ?? 0) < 0.50).length,
-              topRecommendations: recs.slice(0, 3),
-              lastComputedAt: data.generatedAt,
-              summaryMessage: data.message,
-            })
-          } catch {
-            setDashboardData(null)
+      Promise.allSettled([
+        getRecommendationDashboard(),
+        getMyCredentials(),
+      ])
+        .then(async ([dashResult, credsResult]) => {
+          let credsCount = 0
+          if (credsResult.status === 'fulfilled' && Array.isArray(credsResult.value?.data)) {
+            credsCount = credsResult.value.data.length
+          }
+
+          if (dashResult.status === 'fulfilled') {
+            const data = dashResult.value.data
+            data.totalCredentials = Math.max(data.totalCredentials ?? 0, credsCount)
+            setDashboardData(data)
+          } else {
+            console.warn('Dashboard endpoint fallback via getRecommendations:', dashResult.reason)
+            try {
+              const { data } = await getRecommendations()
+              const rawRecs = data.recommendations || []
+              const recs = rawRecs.filter((item, index, self) =>
+                index === self.findIndex((t) => (t.internshipId != null && t.internshipId === item.internshipId) ||
+                  (t.companyName === item.companyName && t.title === item.title))
+              )
+              const topScore = recs.length > 0 ? recs[0].similarityScore : null
+              setDashboardData({
+                hasProfile: data.hasProfile ?? true,
+                totalRecommended: recs.length,
+                totalApplied: 0,
+                totalShortlisted: 0,
+                totalAccepted: 0,
+                totalCompleted: 0,
+                totalCredentials: credsCount,
+                topMatchScore: topScore,
+                topMatchFitLevel: getFitLevel(topScore),
+                bestMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.70).length,
+                strongMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.50 && (r.similarityScore ?? 0) < 0.70).length,
+                goodMatchCount: recs.filter((r) => (r.similarityScore ?? 0) >= 0.30 && (r.similarityScore ?? 0) < 0.50).length,
+                topRecommendations: recs.slice(0, 3),
+                lastComputedAt: data.generatedAt,
+                summaryMessage: data.message,
+              })
+            } catch {
+              setDashboardData(null)
+            }
           }
         })
         .finally(() => setLoadingMetrics(false))
@@ -138,14 +151,14 @@ export default function DashboardPage() {
         <>
           {/* Real Database Recommendation Dashboard Stats */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="card-base card-hover">
+            <div className="card-base card-hover" data-testid="card-ai-recommendations">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-xs font-semibold uppercase tracking-wider">AI Recommendations</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-600 font-bold">
                   ⚡
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900" data-testid="stat-total-recommended">
                 {loadingMetrics ? '…' : `${dashboardData?.totalRecommended ?? 0} Roles`}
               </div>
               <div className="mt-1 text-xs text-slate-500">
@@ -155,51 +168,65 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="card-base card-hover">
+            <div className="card-base card-hover" data-testid="card-high-fit-matches">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wider">High-Fit Matches</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 font-bold">
+                  🎯
+                </span>
+              </div>
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900" data-testid="stat-high-fit-count">
+                {loadingMetrics
+                  ? '…'
+                  : `${(dashboardData?.bestMatchCount ?? 0) + (dashboardData?.strongMatchCount ?? 0)} Roles`}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {dashboardData
+                  ? `${dashboardData.bestMatchCount ?? 0} Best • ${dashboardData.strongMatchCount ?? 0} Strong fit`
+                  : 'SBERT similarity ≥ 0.50'}
+              </div>
+            </div>
+
+            <div className="card-base card-hover" data-testid="card-my-applications">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-xs font-semibold uppercase tracking-wider">My Applications</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 font-bold">
                   📄
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900" data-testid="stat-total-applied">
                 {loadingMetrics ? '…' : `${dashboardData?.totalApplied ?? 0} Submitted`}
               </div>
               <div className="mt-1 text-xs text-slate-500">
                 {dashboardData
-                  ? `${dashboardData.totalShortlisted} Shortlisted • ${dashboardData.totalAccepted} Accepted`
+                  ? (dashboardData.totalCompleted ?? 0) > 0
+                    ? `${dashboardData.totalShortlisted ?? 0} Shortlisted • ${dashboardData.totalCompleted} Completed`
+                    : (dashboardData.totalAccepted ?? 0) > 0
+                    ? `${dashboardData.totalShortlisted ?? 0} Shortlisted • ${dashboardData.totalAccepted} Accepted`
+                    : (dashboardData.totalApplied ?? 0) > 0
+                    ? `${dashboardData.totalShortlisted ?? 0} Shortlisted • ${dashboardData.totalApplied} Under Review`
+                    : '0 Shortlisted • 0 Accepted'
                   : 'Track multi-step hiring timeline'}
               </div>
             </div>
 
-            <div className="card-base card-hover">
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Saved Internships</span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 font-bold">
-                  🔖
-                </span>
-              </div>
-              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
-                {loadingMetrics ? '…' : `${dashboardData?.totalSaved ?? 0} Saved`}
-              </div>
-              <div className="mt-1 text-xs text-slate-500">Bookmarked opportunities</div>
-            </div>
-
-            <div className="card-base card-hover">
+            <div className="card-base card-hover" data-testid="card-verified-credentials">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-xs font-semibold uppercase tracking-wider">Verified Credentials</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 font-bold">
                   🛡️
                 </span>
               </div>
-              <div className="mt-2 text-2xl font-bold font-heading text-slate-900">
+              <div className="mt-2 text-2xl font-bold font-heading text-slate-900" data-testid="stat-verified-credentials">
                 {loadingMetrics
                   ? '…'
-                  : (dashboardData?.totalAccepted ?? 0) > 0
-                  ? `${dashboardData.totalAccepted} Eligible`
-                  : '0 Issued'}
+                  : `${dashboardData?.totalCredentials ?? 0} Issued`}
               </div>
-              <div className="mt-1 text-xs text-slate-500">Public blockchain records</div>
+              <div className="mt-1 text-xs text-slate-500">
+                {(dashboardData?.totalCredentials ?? 0) > 0
+                  ? 'Verified on blockchain'
+                  : 'Public blockchain records'}
+              </div>
             </div>
           </div>
 

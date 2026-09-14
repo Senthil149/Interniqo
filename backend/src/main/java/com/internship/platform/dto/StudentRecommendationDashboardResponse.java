@@ -25,6 +25,8 @@ public class StudentRecommendationDashboardResponse {
     private long totalApplied;
     private long totalShortlisted;
     private long totalAccepted;
+    private long totalCompleted;
+    private long totalCredentials;
     private Double topMatchScore;
     private String topMatchFitLevel;
     private long bestMatchCount;
@@ -44,6 +46,8 @@ public class StudentRecommendationDashboardResponse {
         resp.setTotalApplied(0);
         resp.setTotalShortlisted(0);
         resp.setTotalAccepted(0);
+        resp.setTotalCompleted(0);
+        resp.setTotalCredentials(0);
         resp.setTopRecommendations(Collections.emptyList());
         resp.setSummaryMessage(message);
         return resp;
@@ -57,6 +61,8 @@ public class StudentRecommendationDashboardResponse {
         resp.setTotalApplied(0);
         resp.setTotalShortlisted(0);
         resp.setTotalAccepted(0);
+        resp.setTotalCompleted(0);
+        resp.setTotalCredentials(0);
         resp.setTopRecommendations(Collections.emptyList());
         resp.setSummaryMessage(message);
         return resp;
@@ -110,6 +116,22 @@ public class StudentRecommendationDashboardResponse {
 
     public void setTotalAccepted(long totalAccepted) {
         this.totalAccepted = totalAccepted;
+    }
+
+    public long getTotalCompleted() {
+        return totalCompleted;
+    }
+
+    public void setTotalCompleted(long totalCompleted) {
+        this.totalCompleted = totalCompleted;
+    }
+
+    public long getTotalCredentials() {
+        return totalCredentials;
+    }
+
+    public void setTotalCredentials(long totalCredentials) {
+        this.totalCredentials = totalCredentials;
     }
 
     public Double getTopMatchScore() {

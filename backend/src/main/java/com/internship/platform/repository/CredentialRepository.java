@@ -22,6 +22,8 @@ public interface CredentialRepository extends JpaRepository<Credential, Long> {
 
     List<Credential> findByStudentOrderByCompletionDateDesc(Student student);
 
+    long countByStudent(Student student);
+
     List<Credential> findByCompanyOrderByCompletionDateDesc(Company company);
 
     List<Credential> findByInternshipOrderByCompletionDateDesc(Internship internship);
