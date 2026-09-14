@@ -79,8 +79,8 @@ public final class InternshipSpecification {
             }
 
             // Hard filter 9: relocation requirement
-            if (params.getRelocationRequired() != null) {
-                predicates.add(cb.equal(root.get("relocationRequired"), params.getRelocationRequired()));
+            if (Boolean.TRUE.equals(params.getRelocationRequired())) {
+                predicates.add(cb.isTrue(root.get("relocationRequired")));
             }
 
             // Soft text filter: keyword matched against title (case-insensitive LIKE)
